@@ -1,14 +1,15 @@
+import ShopKartHeader from "@/components/common/ShopKartHeader";
 import CustomButton from "@/components/common/CustomButton";
 import { useAppTheme } from "@/utils/useTheme";
 import {
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +25,7 @@ interface LoginPresenterProps {
   handleLogin: () => void;
   isLoading: boolean;
   gotoRegistration: () => void;
+  onSkip: () => void;
   handleTabSwitch: (isMobile: boolean) => void;
 }
 
@@ -41,10 +43,7 @@ const LoginPresenter = (props: LoginPresenterProps) => {
           barStyle="light-content"
         />
 
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>🛍 ShopKart</Text>
-        </View>
+        <ShopKartHeader />
 
         {/* Content Card */}
         <View style={styles.content}>
@@ -168,8 +167,16 @@ const LoginPresenter = (props: LoginPresenterProps) => {
             style={[styles.button]}
             onPress={props.handleLogin}
             title="Continue"
-            loading={props.isLoading}
+            disabled={props.isLoading}
           />
+
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={props.onSkip}
+            style={styles.skipButton}
+          >
+            <Text style={styles.skipText}>Skip for now</Text>
+          </TouchableOpacity>
 
           <Text
             style={{ color: colors.textSecondary, marginTop: theme.spacing.md }}
@@ -185,8 +192,10 @@ const LoginPresenter = (props: LoginPresenterProps) => {
         </View>
 
         <Image
+          accessibilityLabel="Welcome to ShopKart"
           style={styles.illustration}
-          source={require("@/assets/images/login_illustration.png")}
+          source={require("@/assets/images/create-profile.png")}
+          resizeMode="contain"
         />
       </SafeAreaView>
     </ScrollView>
@@ -200,16 +209,6 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
     container: {
       backgroundColor: theme.colors.background,
       flex: 1,
-    },
-    header: {
-      backgroundColor: theme.colors.primaryDark,
-      paddingHorizontal: theme.spacing.xxl,
-      paddingVertical: theme.spacing.lg,
-    },
-    logo: {
-      color: theme.colors.onPrimary,
-      fontSize: theme.typography.display,
-      fontWeight: theme.typography.weight.bold,
     },
     content: {
       padding: theme.spacing.xxl,
@@ -292,9 +291,19 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
     button: {
       marginTop: theme.spacing.xxl,
     },
+    skipButton: {
+      alignSelf: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+    },
+    skipText: {
+      color: theme.colors.primary,
+      fontSize: theme.typography.body,
+      fontWeight: theme.typography.weight.semiBold,
+      textDecorationLine: "underline",
+    },
     illustration: {
       width: "100%",
       height: 200,
-      resizeMode: "contain",
     },
   });

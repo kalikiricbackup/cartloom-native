@@ -6,7 +6,9 @@ import { useColorScheme } from "react-native";
 import { Provider } from "react-redux";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import ReduxLoadingOverlay from "@/components/common/ReduxLoadingOverlay";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import { userActions, type AuthSession } from "@/features/userSlice";
 import { setAuthToken } from "@/services/ApiClient";
 import { store } from "@/store/store";
@@ -48,8 +50,10 @@ export default function RootLayout() {
         } else if (session !== null && !validSession) {
           await removeStorageItem(StorageKeys.authSession);
         }
+
+        await removeStorageItem("cartloom.wishlist");
       } catch (error) {
-        console.error("Unable to restore saved session.", error);
+        console.error("Unable to restore saved app state.", error);
       } finally {
         if (!cancelled) setSessionRestored(true);
       }
@@ -66,14 +70,17 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <LoadingProvider>
-          <AnimatedSplashOverlay />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </LoadingProvider>
+        <ToastProvider>
+          <LoadingProvider>
+            <AnimatedSplashOverlay />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+            <ReduxLoadingOverlay />
+          </LoadingProvider>
+        </ToastProvider>
       </ThemeProvider>
     </Provider>
   );

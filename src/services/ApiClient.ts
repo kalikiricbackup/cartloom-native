@@ -1,5 +1,6 @@
-import axios, {
+﻿import axios, {
   AxiosError,
+  AxiosHeaders,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
@@ -58,12 +59,18 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const requestConfig = config as CustomAxiosRequestConfig;
 
-    if (
-      requestConfig.authType === "bearer" &&
-      authToken &&
-      !config.headers.has("Authorization")
-    ) {
-      config.headers.set("Authorization", `Bearer ${authToken}`);
+    if (requestConfig.authType === "bearer" && authToken) {
+      const headers = config.headers as any;
+
+      if (headers && typeof headers.set === "function") {
+        if (!headers.has("Authorization")) {
+          headers.set("Authorization", "Bearer " + authToken);
+        }
+      } else {
+        const nextHeaders = AxiosHeaders.from(config.headers ?? {});
+        nextHeaders.set("Authorization", "Bearer " + authToken);
+        config.headers = nextHeaders;
+      }
     }
 
     logApiRequest(config.method || "GET", config.url || "", config.data);

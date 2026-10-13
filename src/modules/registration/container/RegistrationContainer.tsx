@@ -1,21 +1,19 @@
-import { ApiUrls } from "@/constants/ApiUrls";
 import { AppRoutes } from "@/constants/AppConstants";
-import { useLoader } from "@/contexts/LoadingContext";
-import { userActions } from "@/features/userSlice";
-import { registerUser } from "@/services/api";
+import { registerUser } from "@/features/userSlice";
 import { setAuthToken } from "@/services/ApiClient";
-import type { AppDispatch } from "@/store/store";
+import type { AppDispatch, RootState } from "@/store/store";
 import type { RegisterRequest } from "@/types/api/registration";
 import { showAppAlert } from "@/utils/showAppAlert";
 import { setStorageItem, StorageKeys } from "@/utils/storage";
+import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import CreateProfilePresenter from "../presenter/RegistrationPresenter";
 const CreateProfileContainer = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, showLoading, hideLoading } = useLoader();
+  const isLoading = useSelector((state: RootState) => state.user.isLoading);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,14 +46,16 @@ const CreateProfileContainer = () => {
   };
   const handleBack = () => {
     if (router.canGoBack()) {
+      blurFocusedWebElement();
       router.back();
       return;
     }
 
+    blurFocusedWebElement();
     router.replace(AppRoutes.login);
   };
   const handleRegistration = async () => {
-    if (loading) return;
+    if (isLoading) return;
 
     if (!fullName.trim() || !email.trim() || !address.trim() || !pin.trim()) {
       showAppAlert(
@@ -97,30 +97,9 @@ const CreateProfileContainer = () => {
       address: address.trim(),
       pin: pin.trim(),
     };
-    showLoading();
     try {
-      const response = await registerUser(request, ApiUrls.register);
-      const {
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        token_type: tokenType,
-        profile_completed: profileCompleted,
-      } = response.data;
-
-      if (!accessToken || !refreshToken) {
-        throw new Error("Registration response did not include auth tokens.");
-      }
-
-      const session = {
-        email: request.email,
-        accessToken,
-        refreshToken,
-        tokenType,
-        profileCompleted,
-      };
-
-      setAuthToken(accessToken);
-      dispatch(userActions.setCredentials(session));
+      const session = await dispatch(registerUser(request)).unwrap();
+      setAuthToken(session.accessToken);
       try {
         await setStorageItem(StorageKeys.authSession, session);
       } catch (storageError) {
@@ -129,18 +108,16 @@ const CreateProfileContainer = () => {
           storageError,
         );
       }
+      blurFocusedWebElement();
       router.replace(AppRoutes.home);
     } catch (error) {
       const message =
-        error &&
-        typeof error === "object" &&
-        "message" in error &&
-        typeof error.message === "string"
-          ? error.message
-          : "Unable to create your account. Please try again.";
+        typeof error === "string"
+          ? error
+          : error instanceof Error
+            ? error.message
+            : "Unable to create your account. Please try again.";
       showAppAlert("Registration failed", message);
-    } finally {
-      hideLoading();
     }
   };
 
@@ -162,7 +139,11 @@ const CreateProfileContainer = () => {
       onPinChange={handlePinChange}
       onBack={handleBack}
       onRegistration={handleRegistration}
-      isLoading={loading}
+      onSkip={() => {
+        blurFocusedWebElement();
+        router.replace(AppRoutes.home);
+      }}
+      isLoading={isLoading}
     />
   );
 };

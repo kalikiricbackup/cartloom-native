@@ -1,4 +1,5 @@
 import { AppRoutes } from "@/constants/AppConstants";
+import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import OTPPresenter from "../presenter/OTPPresenter";
@@ -18,6 +19,7 @@ const OTPContainer = () => {
 
   const handleVerify = () => {
     console.log("Verifying OTP", otp.join(""));
+    blurFocusedWebElement();
     router.replace(AppRoutes.registration);
   };
 
@@ -28,7 +30,10 @@ const OTPContainer = () => {
       onOtpChange={handleOtpChange}
       onBack={() => router.back()}
       onVerify={handleVerify}
-      onChangeNumber={() => router.replace(AppRoutes.login)}
+      onChangeNumber={() => {
+        blurFocusedWebElement();
+        router.replace(AppRoutes.login);
+      }}
     />
   );
 };

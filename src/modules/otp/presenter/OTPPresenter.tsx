@@ -39,6 +39,7 @@ const OTPPresenter = (props: OTPPresenterProps) => {
         <Image
           style={styles.illustration}
           source={require("@/assets/images/otp_illustration.png")}
+          resizeMode="contain"
         />
         <Text style={styles.title}>Almost there!</Text>
         <Text style={styles.subtitle}>Verify your number</Text>
@@ -107,7 +108,6 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       alignSelf: "center",
       height: 190,
       marginBottom: theme.spacing.sm,
-      resizeMode: "contain",
       width: "100%",
     },
     title: {

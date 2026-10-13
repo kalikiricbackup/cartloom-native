@@ -2,9 +2,13 @@ import { useRouter } from "expo-router";
 import { useDispatch, useSelector } from "react-redux";
 
 import { AppRoutes } from "@/constants/AppConstants";
+import { productCatalogActions } from "@/features/productCatalogSlice";
+import { wishlistActions } from "@/features/wishlistSlice";
 import { userActions } from "@/features/userSlice";
+import { logoutUser } from "@/services/api";
 import { setAuthToken } from "@/services/ApiClient";
 import type { AppDispatch, RootState } from "@/store/store";
+import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
 import { showAppAlert } from "@/utils/showAppAlert";
 import { removeStorageItem, StorageKeys } from "@/utils/storage";
 import AccountPresenter, {
@@ -15,20 +19,33 @@ const AccountContainer = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const account = useSelector((state: RootState) => state.user);
-  const user = account.user as { name?: string; email?: string } | null;
 
   const handleSelectAction = (action: AccountAction) => {
     switch (action) {
       case "wishlist":
+        blurFocusedWebElement();
         router.push(AppRoutes.wishlist);
         return;
       case "logout":
-        setAuthToken(null);
-        dispatch(userActions.logout());
-        void removeStorageItem(StorageKeys.authSession).catch((error) => {
-          console.error("Unable to clear the saved session.", error);
-        });
-        router.replace(AppRoutes.login);
+        blurFocusedWebElement();
+        void (async () => {
+          try {
+            if (account.accessToken) {
+              await logoutUser(account.accessToken);
+            }
+          } catch (error) {
+            console.warn("Logout API failed; clearing local session anyway.", error);
+          } finally {
+            setAuthToken(null);
+            dispatch(productCatalogActions.clearProductCatalog());
+            dispatch(wishlistActions.clearWishlist());
+            dispatch(userActions.logout());
+            void removeStorageItem(StorageKeys.authSession).catch((error) => {
+              console.error("Unable to clear the saved session.", error);
+            });
+            router.replace(AppRoutes.home);
+          }
+        })();
         return;
       case "profile":
       case "orders":
@@ -45,9 +62,13 @@ const AccountContainer = () => {
 
   return (
     <AccountPresenter
-      name={user?.name || "test user"}
-      email={user?.email || account.email || "test@gmail.com"}
+      isAuthenticated={account.isAuthenticated}
+      email={account.email}
       onBack={() => router.navigate(AppRoutes.home)}
+      onLogin={() => {
+        blurFocusedWebElement();
+        router.push(AppRoutes.login);
+      }}
       onSelectAction={handleSelectAction}
     />
   );

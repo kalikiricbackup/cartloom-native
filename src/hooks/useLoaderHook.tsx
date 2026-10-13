@@ -10,7 +10,11 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
  * - showLoading: A function to set the loading state to true.
  * - hideLoading: A function to set the loading state to false.
  */
-export const useLoaderHook = () => {
+export const useLoaderHook = (): [
+  () => React.JSX.Element | null,
+  () => void,
+  () => void,
+] => {
   const [loading, setLoading] = useState(false);
   const { colors } = useAppTheme();
 
@@ -27,12 +31,12 @@ export const useLoaderHook = () => {
    * @function LoaderComponent
    * @returns {React.JSX.Element | null} The loader component or null.
    */
-  const LoaderComponent = () =>
-    loading && (
+  const LoaderComponent = (): React.JSX.Element | null =>
+    loading ? (
       <View style={styles.loaderView}>
         <ActivityIndicator color={colors.primary} size={"large"} />
       </View>
-    );
+    ) : null;
 
   return [LoaderComponent, showLoading, hideLoading];
 };

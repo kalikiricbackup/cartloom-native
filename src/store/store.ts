@@ -1,9 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { homeDataReducer } from "../features/homeDataSlice";
+import { productCatalogReducer } from "../features/productCatalogSlice";
+import { wishlistReducer } from "../features/wishlistSlice";
 import { userReducer } from "../features/userSlice";
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
+    wishlist: wishlistReducer,
+    homeData: homeDataReducer,
+    productCatalog: productCatalogReducer,
   },
 });
 

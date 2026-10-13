@@ -8,6 +8,19 @@
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Download local product photos",
+			"type": "shell",
+			"command": "C:\\Windows\\System32\\cmd.exe",
+			"args": [
+				"/d",
+				"/s",
+				"/c",
+				"if not exist assets\\product-images mkdir assets\\product-images & curl.exe -fL \"https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=640&q=80&fit=crop\" -o assets\\product-images\\iphone15.jpg & curl.exe -fL \"https://images.unsplash.com/photo-1603891128711-11b4b03bb138?w=640&q=80&fit=crop\" -o assets\\product-images\\samsung.jpg & curl.exe -fL \"https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=640&q=80&fit=crop\" -o assets\\product-images\\oneplus.jpg & curl.exe -fL \"https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=640&q=80&fit=crop\" -o assets\\product-images\\pixel9.jpg & curl.exe -fL \"https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=640&q=80&fit=crop\" -o assets\\product-images\\iphone15pro.jpg"
+			],
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }

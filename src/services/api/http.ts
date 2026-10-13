@@ -1,15 +1,19 @@
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
 import apiClient from "../ApiClient";
 
+export interface ApiRequestConfig extends AxiosRequestConfig {
+  authType?: "basic" | "bearer";
+}
+
 export const getApi = <TResponse = unknown>(
   url: string,
-  config?: AxiosRequestConfig,
+  config?: ApiRequestConfig,
 ): Promise<AxiosResponse<TResponse>> => apiClient.get<TResponse>(url, config);
 
 export const postApi = <TResponse = unknown, TRequest = unknown>(
   url: string,
   data: TRequest,
-  config?: AxiosRequestConfig,
+  config?: ApiRequestConfig,
 ): Promise<AxiosResponse<TResponse>> =>
   apiClient.post<TResponse>(url, data, config);
 
@@ -29,6 +33,6 @@ export const patchApi = <TResponse = unknown, TRequest = unknown>(
 
 export const deleteApi = <TResponse = unknown>(
   url: string,
-  config?: AxiosRequestConfig,
+  config?: ApiRequestConfig,
 ): Promise<AxiosResponse<TResponse>> =>
   apiClient.delete<TResponse>(url, config);
