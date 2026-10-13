@@ -1,5 +1,5 @@
 import CustomButton from "@/components/common/CustomButton";
-import Header from "@/components/common/Header";
+import ShopKartHeader from "@/components/common/ShopKartHeader";
 import { useAppTheme } from "@/utils/useTheme";
 import {
   Image,
@@ -29,6 +29,7 @@ interface CreateProfilePresenterProps {
   onPinChange: (value: string) => void;
   onBack: () => void;
   onRegistration: () => void;
+  onSkip: () => void;
   isLoading: boolean;
 }
 
@@ -49,6 +50,7 @@ const CreateProfilePresenter = ({
   onPinChange,
   onBack,
   onRegistration,
+  onSkip,
   isLoading,
 }: CreateProfilePresenterProps) => {
   const theme = useAppTheme();
@@ -60,10 +62,9 @@ const CreateProfilePresenter = ({
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <Header
+        <ShopKartHeader
           onBack={onBack}
           style={styles.fullWidthHeader}
-          title="Registration"
         />
         {/* Illustration */}
         <View
@@ -217,6 +218,13 @@ const CreateProfilePresenter = ({
           title="Continue"
           disabled={isLoading}
         />
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={onSkip}
+          style={styles.skipButton}
+        >
+          <Text style={styles.skipLink}>Skip for now</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </ScrollView>
   );
@@ -315,11 +323,16 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
     checkboxText: {
       color: theme.colors.textSecondary,
     },
-    skipText: {
-      textAlign: "center",
-      marginTop: theme.spacing.lg,
+    skipButton: {
+      alignSelf: "center",
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+    },
+    skipLink: {
       color: theme.colors.primary,
-      fontWeight: theme.typography.weight.medium,
+      fontSize: theme.typography.body,
+      fontWeight: theme.typography.weight.semiBold,
+      textDecorationLine: "underline",
     },
     button: {
       marginTop: theme.spacing.xxl,

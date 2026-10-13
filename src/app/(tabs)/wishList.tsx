@@ -1,9 +1,5 @@
-import { Text, View } from "react-native";
+import WishlistContainer from "@/modules/wishlist/container/WishlistContainer";
 
 export default function WishlistScreen() {
-  return (
-    <View>
-      <Text>Wishlist Screen</Text>
-    </View>
-  );
+  return <WishlistContainer />;
 }

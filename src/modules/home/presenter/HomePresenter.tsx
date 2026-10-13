@@ -1,48 +1,98 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
+import type { ComponentProps } from "react";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AppHeader from "@/components/common/AppHeader";
+import CustomButton from "@/components/common/CustomButton";
+import SearchBar from "@/components/common/SearchBar";
+import type { HomeBestDeal, HomeCategory } from "@/types/api/home";
 import { useAppTheme } from "@/utils/useTheme";
 
 interface HomePresenterProps {
-  query: string;
+  categories: HomeCategory[];
+  featuredProducts: HomeBestDeal[];
+  isLoading: boolean;
+  error: string | null;
   selectedCategory: string;
-  onQueryChange: (query: string) => void;
-  onClearQuery: () => void;
+  onSearchPress: () => void;
   onCategorySelect: (category: string) => void;
+  onSeeAllCategories: () => void;
+  onViewAllDeals: () => void;
+  onSelectProduct: (productId: number) => void;
+  onRetry: () => void;
 }
 
-const categories = [
-  { name: "Mobiles", icon: "phone-portrait-outline" as const },
-  { name: "Fashion", icon: "shirt-outline" as const },
-  { name: "Electronics", icon: "laptop-outline" as const },
-  { name: "Home", icon: "home-outline" as const },
-  { name: "Beauty", icon: "color-palette-outline" as const },
-  { name: "Appliances", icon: "cube-outline" as const },
-  { name: "Sports", icon: "football-outline" as const },
-  { name: "More", icon: "apps-outline" as const },
-];
+const categoryIcons: Record<string, ComponentProps<typeof Ionicons>["name"]> = {
+  mobiles: "phone-portrait-outline",
+  fashion: "shirt-outline",
+  electronics: "laptop-outline",
+  home: "home-outline",
+  beauty: "color-palette-outline",
+  appliances: "tv-outline",
+  "sports-fitness": "barbell-outline",
+  toys: "game-controller-outline",
+} as const;
 
-const deals = [
-  { name: "iPhone 15", price: "₹54,999", rating: "4.6" },
-  { name: "Samsung Galaxy S24", price: "₹74,999", rating: "4.5" },
-];
+function CategoryArtwork({
+  iconUrl,
+  fallbackIcon,
+  selected,
+}: {
+  iconUrl: string;
+  fallbackIcon: ComponentProps<typeof Ionicons>["name"];
+  selected: boolean;
+}) {
+  const theme = useAppTheme();
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (iconUrl && !imageFailed) {
+    return (
+      <Image
+        accessibilityLabel="Category icon"
+        contentFit="contain"
+        onError={() => setImageFailed(true)}
+        source={{ uri: iconUrl }}
+        style={{ height: 28, width: 28 }}
+      />
+    );
+  }
+
+  return (
+    <Ionicons
+      name={fallbackIcon}
+      size={23}
+      color={selected ? theme.colors.primary : theme.colors.textSecondary}
+    />
+  );
+}
+
+const currency = (amount: number) =>
+  `₹${Math.round(amount).toLocaleString("en-IN")}`;
 
 export default function HomePresenter({
-  query,
+  categories,
+  featuredProducts,
+  isLoading,
+  error,
   selectedCategory,
-  onQueryChange,
-  onClearQuery,
+  onSearchPress,
   onCategorySelect,
+  onSeeAllCategories,
+  onViewAllDeals,
+  onSelectProduct,
+  onRetry,
 }: HomePresenterProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
@@ -51,57 +101,22 @@ export default function HomePresenter({
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topBar}>
-          <View style={styles.brand}>
-            <View style={styles.brandMark}>
-              <Ionicons
-                name="bag-handle"
-                size={19}
-                color={theme.colors.primaryDark}
-              />
-            </View>
-            <Text style={styles.brandName}>ShopKart</Text>
-          </View>
-          <TouchableOpacity
-            accessibilityLabel="Notifications"
-            style={styles.iconButton}
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={21}
-              color={theme.colors.onPrimary}
-            />
-          </TouchableOpacity>
-        </View>
+        <AppHeader
+          rightActions={[
+            {
+              accessibilityLabel: "Notifications",
+              icon: "notifications-outline",
+            },
+          ]}
+          title="ShopKart"
+        />
 
-        <View style={styles.searchBar}>
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color={theme.colors.textTertiary}
-          />
-          <TextInput
-            accessibilityLabel="Search products"
-            onChangeText={onQueryChange}
-            placeholder="Search for products, brands and more"
-            placeholderTextColor={theme.colors.textTertiary}
-            returnKeyType="search"
-            style={styles.searchInput}
-            value={query}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity
-              accessibilityLabel="Clear search"
-              onPress={onClearQuery}
-            >
-              <Ionicons
-                name="close-circle"
-                size={19}
-                color={theme.colors.textTertiary}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+        <SearchBar
+          accessibilityLabel="Search products"
+          onPress={onSearchPress}
+          placeholder="Search for products, brands and more"
+          style={styles.searchBar}
+        />
 
         <View style={styles.promoBanner}>
           <View style={styles.promoCopy}>
@@ -128,103 +143,151 @@ export default function HomePresenter({
           />
         </View>
 
-        <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle}>Top Categories</Text>
-          <TouchableOpacity style={styles.seeAll}>
-            <Text style={styles.seeAllText}>See all</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.categoryGrid}>
-          {categories.map((category) => {
-            const isSelected = selectedCategory === category.name;
-            return (
+        {isLoading ? (
+          <View
+            accessibilityLiveRegion="polite"
+            style={styles.catalogLoading}
+          >
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <Text style={styles.catalogStatusText}>
+              Loading categories and best deals...
+            </Text>
+          </View>
+        ) : error ? (
+          <View style={styles.catalogError}>
+            <Text style={styles.catalogStatusText}>{error}</Text>
+            <CustomButton onPress={onRetry} title="Try again" />
+          </View>
+        ) : (
+          <>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>Top Categories</Text>
               <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                key={category.name}
-                onPress={() => onCategorySelect(category.name)}
-                style={styles.categoryItem}
+                onPress={onSeeAllCategories}
+                style={styles.seeAll}
               >
-                <View
-                  style={[
-                    styles.categoryIcon,
-                    isSelected && styles.categoryIconSelected,
-                  ]}
-                >
-                  <Ionicons
-                    name={category.icon}
-                    size={23}
-                    color={
-                      isSelected
-                        ? theme.colors.primary
-                        : theme.colors.textSecondary
-                    }
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.categoryName,
-                    isSelected && styles.categoryNameSelected,
-                  ]}
-                >
-                  {category.name}
-                </Text>
+                <Text style={styles.seeAllText}>See all</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={14}
+                  color={theme.colors.primary}
+                />
               </TouchableOpacity>
-            );
-          })}
-        </View>
+            </View>
+            <View style={styles.categoryGrid}>
+              {categories.map((category) => {
+                const isSelected = selectedCategory === category.name;
+                return (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    key={category.id}
+                    onPress={() => onCategorySelect(category.name)}
+                    style={styles.categoryItem}
+                  >
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        isSelected && styles.categoryIconSelected,
+                      ]}
+                    >
+                      <CategoryArtwork
+                        iconUrl={category.icon}
+                        fallbackIcon={
+                          categoryIcons[category.slug] ?? "grid-outline"
+                        }
+                        selected={isSelected}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.categoryName,
+                        isSelected && styles.categoryNameSelected,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-        <View style={styles.sectionHeading}>
-          <Text style={styles.sectionTitle}>Best Deals</Text>
-          <TouchableOpacity style={styles.seeAll}>
-            <Text style={styles.seeAllText}>View all</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={theme.colors.primary}
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>Best Deals</Text>
+              <TouchableOpacity
+                accessibilityRole="button"
+                onPress={onViewAllDeals}
+                style={styles.seeAll}
+              >
+                <Text style={styles.seeAllText}>View all</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              accessibilityLabel="Best deals, horizontally scrollable"
+              alwaysBounceHorizontal
+              decelerationRate="fast"
+              data={featuredProducts}
+              keyExtractor={(product) => String(product.id)}
+              horizontal
+              contentContainerStyle={styles.dealList}
+              nestedScrollEnabled
+              persistentScrollbar
+              showsHorizontalScrollIndicator
+              style={styles.dealScroll}
+              renderItem={({ item: product }) => {
+                const imageUrl = product.variants[0]?.images[0];
+                return (
+                  <TouchableOpacity
+                    onPress={() => onSelectProduct(product.id)}
+                    style={styles.dealCard}
+                  >
+                    <View style={styles.productArt}>
+                      {imageUrl ? (
+                        <Image
+                          accessibilityLabel={`${product.name} product image`}
+                          contentFit="cover"
+                          source={{ uri: imageUrl }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                      ) : (
+                        <Ionicons
+                          name="image-outline"
+                          size={34}
+                          color={theme.colors.primaryDark}
+                        />
+                      )}
+                    </View>
+                    <Text numberOfLines={1} style={styles.productName}>
+                      {product.name}
+                    </Text>
+                    <Text style={styles.dealBadge}>{product.badge}</Text>
+                    <View style={styles.productMeta}>
+                      <Text style={styles.productPrice}>
+                        {currency(product.deal.price)}
+                      </Text>
+                      <View style={styles.rating}>
+                        <Ionicons
+                          name="star"
+                          size={12}
+                          color={theme.colors.warning}
+                        />
+                        <Text style={styles.ratingText}>
+                          {product.rating.toFixed(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
             />
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          contentContainerStyle={styles.dealList}
-          showsHorizontalScrollIndicator={false}
-        >
-          {deals.map((deal) => (
-            <TouchableOpacity key={deal.name} style={styles.dealCard}>
-              <View style={styles.productArt}>
-                <View style={styles.phoneFrame}>
-                  <View style={styles.phoneScreen}>
-                    <Ionicons
-                      name="phone-portrait"
-                      size={34}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                </View>
-              </View>
-              <Text numberOfLines={1} style={styles.productName}>
-                {deal.name}
-              </Text>
-              <View style={styles.productMeta}>
-                <Text style={styles.productPrice}>{deal.price}</Text>
-                <View style={styles.rating}>
-                  <Ionicons
-                    name="star"
-                    size={12}
-                    color={theme.colors.warning}
-                  />
-                  <Text style={styles.ratingText}>{deal.rating}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -234,58 +297,9 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: theme.colors.background },
     content: { paddingBottom: theme.spacing.lg },
-    topBar: {
-      alignItems: "center",
-      backgroundColor: theme.colors.primaryDark,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.md,
-      paddingTop: theme.spacing.xs,
-    },
-    brand: {
-      alignItems: "center",
-      flexDirection: "row",
-      gap: theme.spacing.sm,
-    },
-    brandMark: {
-      alignItems: "center",
-      backgroundColor: theme.colors.warning,
-      borderRadius: theme.radius.xs,
-      height: 31,
-      justifyContent: "center",
-      width: 27,
-    },
-    brandName: {
-      color: theme.colors.onPrimary,
-      fontSize: theme.typography.display,
-      fontWeight: theme.typography.weight.semiBold,
-    },
-    iconButton: {
-      alignItems: "center",
-      height: 40,
-      justifyContent: "center",
-      width: 40,
-    },
     searchBar: {
-      alignItems: "center",
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.radius.md,
-      flexDirection: "row",
-      gap: theme.spacing.sm,
       marginHorizontal: theme.spacing.md,
       marginTop: theme.spacing.sm,
-      minHeight: 46,
-      paddingHorizontal: theme.spacing.md,
-    },
-    searchInput: {
-      backgroundColor: "transparent",
-      borderWidth: 0,
-      color: theme.colors.textPrimary,
-      flex: 1,
-      fontSize: theme.typography.bodySmall,
-      outlineWidth: 0,
-      paddingVertical: theme.spacing.sm,
     },
     promoBanner: {
       alignItems: "center",
@@ -333,6 +347,24 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       right: -theme.spacing.xs,
       bottom: -theme.spacing.xs,
       width: "58%",
+    },
+    catalogLoading: {
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      justifyContent: "center",
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.xl,
+      minHeight: 180,
+    },
+    catalogError: {
+      alignItems: "center",
+      gap: theme.spacing.sm,
+      marginHorizontal: theme.spacing.md,
+      marginTop: theme.spacing.md,
+    },
+    catalogStatusText: {
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.bodySmall,
     },
     sectionHeading: {
       alignItems: "center",
@@ -393,6 +425,11 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       fontWeight: theme.typography.weight.semiBold,
     },
     dealList: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.md },
+    dealScroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+      width: "100%",
+    },
     dealCard: {
       backgroundColor: theme.colors.card,
       borderColor: theme.colors.border,
@@ -407,20 +444,14 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       borderRadius: theme.radius.sm,
       height: 103,
       justifyContent: "center",
+      overflow: "hidden",
     },
-    phoneFrame: {
-      backgroundColor: theme.colors.textPrimary,
-      borderRadius: theme.radius.sm,
-      height: 82,
-      padding: 4,
-      width: 49,
-    },
-    phoneScreen: {
-      alignItems: "center",
-      backgroundColor: theme.colors.primaryLight,
-      borderRadius: theme.radius.xs,
-      flex: 1,
-      justifyContent: "center",
+    dealBadge: {
+      alignSelf: "flex-start",
+      color: theme.colors.primary,
+      fontSize: theme.typography.tiny,
+      fontWeight: theme.typography.weight.semiBold,
+      marginTop: theme.spacing.xs,
     },
     productName: {
       color: theme.colors.textPrimary,

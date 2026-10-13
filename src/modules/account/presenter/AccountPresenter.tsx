@@ -3,6 +3,8 @@ import { StatusBar } from "expo-status-bar";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AppHeader from "@/components/common/AppHeader";
+import CustomButton from "@/components/common/CustomButton";
 import { useAppTheme } from "@/utils/useTheme";
 
 export type AccountAction =
@@ -15,9 +17,10 @@ export type AccountAction =
   | "logout";
 
 interface AccountPresenterProps {
-  name: string;
+  isAuthenticated: boolean;
   email: string;
   onBack: () => void;
+  onLogin: () => void;
   onSelectAction: (action: AccountAction) => void;
 }
 
@@ -47,9 +50,10 @@ const menuItems: {
 ];
 
 export default function AccountPresenter({
-  name,
+  isAuthenticated,
   email,
   onBack,
+  onLogin,
   onSelectAction,
 }: AccountPresenterProps) {
   const theme = useAppTheme();
@@ -58,75 +62,80 @@ export default function AccountPresenter({
   return (
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
       <StatusBar style="light" />
-      <View style={styles.header}>
-        <Pressable
-          accessibilityLabel="Back to Home"
-          accessibilityRole="button"
-          hitSlop={10}
-          onPress={onBack}
-          style={styles.backButton}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={21}
-            color={theme.colors.onPrimary}
-          />
-        </Pressable>
-        <Text style={styles.headerTitle}>My Account</Text>
-      </View>
+      <AppHeader onBack={onBack} title="My Account" />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => onSelectAction("profile")}
-          style={styles.profileCard}
-        >
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={27} color={theme.colors.primary} />
-          </View>
-          <View style={styles.profileCopy}>
-            <Text style={styles.name}>{name}</Text>
-            <Text numberOfLines={1} style={styles.email}>
-              {email}
+        {isAuthenticated ? (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => onSelectAction("profile")}
+              style={styles.profileCard}
+            >
+              <View style={styles.avatar}>
+                <Ionicons
+                  name="person"
+                  size={27}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.profileCopy}>
+                <Text style={styles.name}>My Account</Text>
+                <Text numberOfLines={1} style={styles.email}>
+                  {email}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.colors.textTertiary}
+              />
+            </Pressable>
+
+            <View style={styles.menu}>
+              {menuItems.map((item, index) => {
+                const isLogout = item.id === "logout";
+                const color = isLogout
+                  ? theme.colors.error
+                  : theme.colors.primary;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={item.id}
+                    onPress={() => onSelectAction(item.id)}
+                    style={[
+                      styles.menuRow,
+                      index < menuItems.length - 1 && styles.menuRowDivider,
+                    ]}
+                  >
+                    <Ionicons name={item.icon} size={19} color={color} />
+                    <Text
+                      style={[
+                        styles.menuLabel,
+                        isLogout && styles.logoutLabel,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={17}
+                      color={theme.colors.textTertiary}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <View style={styles.signedOut}>
+            <CustomButton title="Log In" onPress={onLogin} />
+            <Text style={styles.signedOutMessage}>
+              Log in to get exclusive offers
             </Text>
           </View>
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={theme.colors.textTertiary}
-          />
-        </Pressable>
-
-        <View style={styles.menu}>
-          {menuItems.map((item, index) => {
-            const isLogout = item.id === "logout";
-            const color = isLogout ? theme.colors.error : theme.colors.primary;
-
-            return (
-              <Pressable
-                accessibilityRole="button"
-                key={item.id}
-                onPress={() => onSelectAction(item.id)}
-                style={[
-                  styles.menuRow,
-                  index < menuItems.length - 1 && styles.menuRowDivider,
-                ]}
-              >
-                <Ionicons name={item.icon} size={19} color={color} />
-                <Text
-                  style={[styles.menuLabel, isLogout && styles.logoutLabel]}
-                >
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={17}
-                  color={theme.colors.textTertiary}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -138,29 +147,25 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       backgroundColor: theme.colors.background,
       flex: 1,
     },
-    header: {
-      alignItems: "center",
-      backgroundColor: theme.colors.primaryDark,
-      flexDirection: "row",
-      minHeight: 50,
-      paddingHorizontal: theme.spacing.md,
-    },
-    backButton: {
-      alignItems: "center",
-      height: 42,
-      justifyContent: "center",
-      width: 38,
-    },
-    headerTitle: {
-      color: theme.colors.onPrimary,
-      fontSize: theme.typography.bodyLarge,
-      fontWeight: theme.typography.weight.semiBold,
-      marginLeft: theme.spacing.sm,
-    },
     content: {
       gap: theme.spacing.md,
       padding: theme.spacing.md,
       paddingBottom: theme.spacing.xl,
+    },
+    signedOut: {
+      alignItems: "center",
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.md,
+      borderWidth: 1,
+      gap: theme.spacing.md,
+      padding: theme.spacing.xl,
+    },
+    signedOutMessage: {
+      color: theme.colors.textPrimary,
+      fontSize: theme.typography.body,
+      fontWeight: theme.typography.weight.semiBold,
+      textAlign: "center",
     },
     profileCard: {
       alignItems: "center",

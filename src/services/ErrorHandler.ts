@@ -35,14 +35,26 @@ export const ErrorHandler = (
     const { status, data } = error.response;
     const responseMessage =
       typeof data?.message === "string" ? data.message : undefined;
+    const detailMessage =
+      typeof data?.detail === "string" ? data.detail : undefined;
     let message = "An unexpected error occurred.";
 
     switch (status) {
       case AppConstants.statusCode400:
-        message = responseMessage || "Bad request. Please check your input.";
+        message =
+          responseMessage ||
+          detailMessage ||
+          "Bad request. Please check your input.";
+        break;
+      case 401:
+        message = responseMessage || "Please sign in again to continue.";
         break;
       case AppConstants.statusCode403:
         message = "You do not have permission to perform this action.";
+        break;
+      case 409:
+        message =
+          responseMessage || detailMessage || "This product is already in your wishlist.";
         break;
       case AppConstants.statusCode404:
         message = "The requested resource was not found.";
@@ -51,13 +63,14 @@ export const ErrorHandler = (
         message =
           getValidationMessage(data) ||
           responseMessage ||
+          detailMessage ||
           "Please check the entered information.";
         break;
       case AppConstants.statusCode500:
         message = "Server error. Please try again later.";
         break;
       default:
-        message = responseMessage || message;
+        message = responseMessage || detailMessage || message;
     }
 
     return { message, status };

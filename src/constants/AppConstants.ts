@@ -15,5 +15,8 @@ export const AppRoutes = {
   registration: "/(auth)/registration",
   otp: "/(auth)/otp",
   home: "/(tabs)/home",
+  productList: "/(tabs)/products",
+  productDetails: "/(tabs)/product-details",
+  search: "/(tabs)/search",
   wishlist: "/(tabs)/wishList",
 } as const;

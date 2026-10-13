@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-10-13T10:25:00Z",
+  "generatedOnPlatform": "win32",
+  "projectType": "webapp",
+  "setup": [
+    {
+      "command": "npm",
+      "args": ["ci"],
+      "timeoutSeconds": 600
+    }
+  ],
+  "assertions": [
+    {
+      "name": "tsc-no-emit",
+      "kind": "process",
+      "command": "npx",
+      "args": ["tsc", "--noEmit"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "expo-web-export",
+      "kind": "process",
+      "command": "npx",
+      "args": ["expo", "export", "--platform", "web"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "lint-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "tests-pass",
+      "kind": "process",
+      "command": "npm",
+      "args": ["test"],
+      "verificationMethod": "test-results",
+      "expected": "0",
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "expo-home-route",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": ["run", "web", "--", "--port", "8787"],
+      "env": {
+        "CI": "1"
+      },
+      "url": "http://localhost:8787/",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "expo-products-route",
+      "kind": "http-probe",
+      "startCommand": "npm",
+      "startArgs": ["run", "web", "--", "--port", "8787"],
+      "env": {
+        "CI": "1"
+      },
+      "url": "http://localhost:8787/products",
+      "verificationMethod": "http-status",
+      "expected": "200",
+      "timeoutSeconds": 180
+    }
+  ]
+}

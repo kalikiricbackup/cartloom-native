@@ -24,14 +24,16 @@ export default function TabsLayout() {
 
           borderTopWidth: 1,
 
-          height: 60,
+          height: 76,
 
-          paddingTop: 6,
-          paddingBottom: 6,
+          paddingTop: 4,
+          paddingBottom: 12,
         },
 
         tabBarLabelStyle: {
-          fontSize: theme.typography.caption,
+          fontSize: 11,
+
+          lineHeight: 14,
 
           fontWeight: theme.typography.weight.medium,
         },
@@ -48,12 +50,23 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
+        name="products"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="product-details"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
         name="search"
         options={{
-          title: "Search",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" color={color} size={size} />
-          ),
+          href: null,
         }}
       />
 
