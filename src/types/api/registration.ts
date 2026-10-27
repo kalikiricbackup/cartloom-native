@@ -3,7 +3,11 @@ export interface RegisterRequest {
   email: string;
   password: string;
   gender: 0 | 1 | 2;
-  address: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+  };
   pin: string;
 }
 

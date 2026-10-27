@@ -1,49 +1,27 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { Image } from "expo-image";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { WishlistEntry } from "@/services/api";
-import type { ProductDetails } from "@/types/api/productDetails";
 import { useAppTheme } from "@/utils/useTheme";
 
 interface WishlistItemCardProps {
   entry: WishlistEntry;
-  product?: ProductDetails;
-  isLoadingDetails: boolean;
-  detailsError: string | null;
-  isAddingToCart: boolean;
   onOpenProduct: (productId: number) => void;
-  onRemoveProduct: (productId: number) => void;
-  onAddToCart: (entry: WishlistEntry) => void;
+  onRemoveProduct: () => void;
 }
-
-const currency = (amount: number) =>
-  `₹${Math.round(amount).toLocaleString("en-IN")}`;
 
 export default function WishlistItemCard({
   entry,
-  product,
-  isLoadingDetails,
-  detailsError,
-  isAddingToCart,
   onOpenProduct,
   onRemoveProduct,
-  onAddToCart,
 }: WishlistItemCardProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
-  const variant = product?.variants.find(
-    (item) => item.variantid === entry.variant_id,
-  );
+  const { product, variant } = entry;
+  const productName = product?.name ?? `Product #${entry.product_id}`;
   const imageUrl = variant?.images[0];
   const options = variant?.options.map((option) => option.value).join(", ");
-  const productName = product?.name ?? `Product #${entry.product_id}`;
 
   return (
     <View style={styles.card}>
@@ -74,70 +52,36 @@ export default function WishlistItemCard({
             <Text numberOfLines={2} style={styles.productName}>
               {productName}
             </Text>
-            {isLoadingDetails ? (
-              <Text style={styles.meta}>Loading product details...</Text>
-            ) : detailsError ? (
+            {options ? (
               <Text numberOfLines={1} style={styles.meta}>
-                {detailsError}
+                {options}
               </Text>
-            ) : (
-              <>
-                {options ? (
-                  <Text numberOfLines={1} style={styles.meta}>
-                    {options}
-                  </Text>
-                ) : null}
-                {variant ? (
-                  <Text style={styles.price}>{currency(variant.price)}</Text>
-                ) : null}
-                {product ? (
-                  <View style={styles.ratingRow}>
-                    <Ionicons
-                      color={theme.colors.success}
-                      name="star"
-                      size={13}
-                    />
-                    <Text style={styles.rating}>
-                      {product.rating.toFixed(1)} ({product.reviews})
-                    </Text>
-                  </View>
-                ) : null}
-              </>
-            )}
+            ) : null}
+            {variant ? (
+              <Text style={styles.price}>
+                ₹{Math.round(variant.price).toLocaleString("en-IN")}
+              </Text>
+            ) : null}
+            {product ? (
+              <View style={styles.ratingRow}>
+                <Ionicons color={theme.colors.success} name="star" size={13} />
+                <Text style={styles.rating}>
+                  {product.rating.toFixed(1)} ({product.reviews})
+                </Text>
+              </View>
+            ) : null}
           </View>
         </Pressable>
         <Pressable
           accessibilityLabel={`Remove ${productName} from wishlist`}
           accessibilityRole="button"
           hitSlop={8}
-          onPress={() => onRemoveProduct(entry.product_id)}
+          onPress={onRemoveProduct}
           style={styles.removeButton}
         >
           <Ionicons color={theme.colors.error} name="heart" size={20} />
         </Pressable>
       </View>
-      <Pressable
-        accessibilityLabel={`Move ${productName} to cart`}
-        accessibilityRole="button"
-        accessibilityState={{
-          disabled: !variant || variant.stock <= 0 || isAddingToCart,
-          busy: isAddingToCart,
-        }}
-        disabled={!variant || variant.stock <= 0 || isAddingToCart}
-        onPress={() => onAddToCart(entry)}
-        style={[
-          styles.moveButton,
-          (!variant || variant.stock <= 0) && styles.disabledButton,
-        ]}
-      >
-        {isAddingToCart ? (
-          <ActivityIndicator color={theme.colors.primary} size="small" />
-        ) : (
-          <Text style={styles.moveButtonText}>
-            {variant && variant.stock <= 0 ? "Out of Stock" : "Move to Cart"}
-          </Text>
-        )}
-      </Pressable>
     </View>
   );
 }
@@ -206,24 +150,5 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       height: 32,
       justifyContent: "center",
       width: 32,
-    },
-    moveButton: {
-      alignItems: "center",
-      alignSelf: "flex-end",
-      borderColor: theme.colors.primary,
-      borderRadius: theme.radius.sm,
-      borderWidth: 1,
-      justifyContent: "center",
-      minHeight: 36,
-      minWidth: 128,
-      paddingHorizontal: theme.spacing.md,
-    },
-    moveButtonText: {
-      color: theme.colors.primary,
-      fontSize: theme.typography.caption,
-      fontWeight: theme.typography.weight.semiBold,
-    },
-    disabledButton: {
-      opacity: 0.5,
     },
   });

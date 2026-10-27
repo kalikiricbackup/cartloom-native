@@ -1,25 +1,32 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 import { AppRoutes } from "@/constants/AppConstants";
-import { getProductDetails } from "@/services/api";
+import { useToast } from "@/contexts/ToastContext";
+import { addCartItem, getProductDetails } from "@/services/api";
+import type { RootState } from "@/store/store";
 import type {
   ProductDetails,
   ProductDetailsVariant,
 } from "@/types/api/productDetails";
-import { showAppAlert } from "@/utils/showAppAlert";
 import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
+import { showAppAlert } from "@/utils/showAppAlert";
 import ProductDetailsPresenter from "../presenter/ProductDetailsPresenter";
 
 const getStartingVariant = (product: ProductDetails) => {
   const availableVariants = product.variants.filter(
     (variant) => variant.stock > 0,
   );
-  const variants = availableVariants.length ? availableVariants : product.variants;
+  const variants = availableVariants.length
+    ? availableVariants
+    : product.variants;
 
-  return variants.reduce<ProductDetailsVariant | undefined>((lowest, variant) =>
-    !lowest || variant.price < lowest.price ? variant : lowest,
-  undefined);
+  return variants.reduce<ProductDetailsVariant | undefined>(
+    (lowest, variant) =>
+      !lowest || variant.price < lowest.price ? variant : lowest,
+    undefined,
+  );
 };
 
 const getErrorMessage = (error: unknown) => {
@@ -36,44 +43,50 @@ const getErrorMessage = (error: unknown) => {
 
 const ProductDetailsContainer = () => {
   const router = useRouter();
+  const { showToast } = useToast();
+  const accessToken = useSelector((state: RootState) => state.user.accessToken);
   const { productId } = useLocalSearchParams<{ productId?: string }>();
   const parsedProductId = Number(productId);
   const validProductId =
     Number.isSafeInteger(parsedProductId) && parsedProductId > 0
       ? parsedProductId
       : null;
-  const [product, setProduct] = useState<ProductDetails>();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [productResult, setProductResult] = useState<{
+    productId: number;
+    retryCount: number;
+    product?: ProductDetails;
+    error?: string;
+  } | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
-    null,
-  );
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [selectedVariantSelection, setSelectedVariantSelection] = useState<{
+    productId: number;
+    variantId: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    if (validProductId === null) {
-      setProduct(undefined);
-      setError("A valid product ID is required to load product details.");
-      setIsLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setProduct(undefined);
-    setError(null);
-    setIsLoading(true);
+    if (validProductId === null) return;
 
     const loadProduct = async () => {
       try {
         const response = await getProductDetails(validProductId);
-        if (!cancelled) setProduct(response);
+        if (!cancelled) {
+          setProductResult({
+            productId: validProductId,
+            retryCount,
+            product: response,
+          });
+        }
       } catch (loadError) {
-        if (!cancelled) setError(getErrorMessage(loadError));
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setProductResult({
+            productId: validProductId,
+            retryCount,
+            error: getErrorMessage(loadError),
+          });
+        }
       }
     };
 
@@ -83,15 +96,23 @@ const ProductDetailsContainer = () => {
     };
   }, [retryCount, validProductId]);
 
-  useEffect(() => {
-    setSelectedVariantId(
-      product ? (getStartingVariant(product)?.variantid ?? null) : null,
-    );
-  }, [product]);
+  const resultMatchesRequest =
+    productResult?.productId === validProductId &&
+    productResult.retryCount === retryCount;
+  const product = resultMatchesRequest ? productResult?.product : undefined;
+  const error =
+    validProductId === null
+      ? "A valid product ID is required to load product details."
+      : resultMatchesRequest
+        ? (productResult?.error ?? null)
+        : null;
+  const isLoading = validProductId !== null && !resultMatchesRequest;
 
   const selectedVariant =
     product?.variants.find(
-      (variant) => variant.variantid === selectedVariantId,
+      (variant) =>
+        variant.variantid === selectedVariantSelection?.variantId &&
+        product.id === selectedVariantSelection.productId,
     ) ?? (product ? getStartingVariant(product) : undefined);
 
   const handleOptionSelect = (type: string, value: string) => {
@@ -117,17 +138,43 @@ const ProductDetailsContainer = () => {
       ),
     );
 
-    setSelectedVariantId(
-      (exactVariant ?? matchingVariants[0])?.variantid ?? null,
-    );
+    const nextVariant = exactVariant ?? matchingVariants[0];
+    if (nextVariant) {
+      setSelectedVariantSelection({
+        productId: product.id,
+        variantId: nextVariant.variantid,
+      });
+    }
   };
 
-  const handleAddToCart = (variant: ProductDetailsVariant) => {
-    if (!product) return;
-    showAppAlert(
-      "Cart coming soon",
-      `${product.name} (${variant.options.map((option) => option.value).join(", ")}) is ready to add once cart is available.`,
-    );
+  const handleAddToCart = async (variant: ProductDetailsVariant) => {
+    if (!product || isAddingToCart) return;
+    if (!accessToken) {
+      showToast({
+        message: "Sign in to add items to your cart.",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsAddingToCart(true);
+    try {
+      await addCartItem(
+        { parentId: variant.parentId, variant_id: variant.variantid },
+        accessToken,
+      );
+      showToast({ message: `${product.name} added to cart.`, type: "success" });
+    } catch (addError) {
+      showToast({
+        message:
+          addError instanceof Error
+            ? addError.message
+            : "Unable to add this product to your cart.",
+        type: "error",
+      });
+    } finally {
+      setIsAddingToCart(false);
+    }
   };
 
   const handleRetry = useCallback(() => {
@@ -135,10 +182,7 @@ const ProductDetailsContainer = () => {
   }, []);
 
   const handleBuyNow = () => {
-    showAppAlert(
-      "Checkout coming soon",
-      "Checkout will be available soon.",
-    );
+    showAppAlert("Checkout coming soon", "Checkout will be available soon.");
   };
 
   return (
@@ -151,6 +195,7 @@ const ProductDetailsContainer = () => {
       onBack={() => router.back()}
       onOptionSelect={handleOptionSelect}
       onAddToCart={handleAddToCart}
+      isAddingToCart={isAddingToCart}
       onBuyNow={handleBuyNow}
       onGoHome={() => {
         blurFocusedWebElement();

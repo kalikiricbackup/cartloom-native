@@ -6,37 +6,26 @@ import AppHeader from "@/components/common/AppHeader";
 import EmptyState from "@/components/common/EmptyState";
 import WishlistItemCard from "@/components/product/WishlistItemCard";
 import type { WishlistEntry } from "@/services/api";
-import type { ProductDetails } from "@/types/api/productDetails";
 import { useAppTheme } from "@/utils/useTheme";
 
 interface WishlistPresenterProps {
   entries: WishlistEntry[];
-  productsById: Record<number, ProductDetails>;
-  loadingProductIds: number[];
-  productErrors: Record<number, string>;
-  addingProductId: number | null;
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
   onBack: () => void;
   onOpenProduct: (productId: number) => void;
-  onRemoveProduct: (productId: number) => void;
-  onAddToCart: (entry: WishlistEntry) => void;
+  onRemoveProduct: (entry: WishlistEntry) => void;
 }
 
 export default function WishlistPresenter({
   entries,
-  productsById,
-  loadingProductIds,
-  productErrors,
-  addingProductId,
   isLoading,
   error,
   onRetry,
   onBack,
   onOpenProduct,
   onRemoveProduct,
-  onAddToCart,
 }: WishlistPresenterProps) {
   const theme = useAppTheme();
   const styles = createStyles(theme);
@@ -46,45 +35,48 @@ export default function WishlistPresenter({
       <StatusBar style="light" />
       <AppHeader onBack={onBack} title="My Wishlist" />
 
-      <FlatList
-        contentContainerStyle={styles.listContent}
-        data={entries}
-        keyExtractor={(entry) => `${entry.product_id}:${entry.variant_id}`}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.productSeparator} />}
-        ListEmptyComponent={
-          isLoading ? (
-            <EmptyState fillAvailableSpace loading title="Loading wishlist" />
-          ) : error ? (
-            <EmptyState
-              fillAvailableSpace
-              icon="alert-circle-outline"
-              message={error}
-              onRetry={onRetry}
-              title="Unable to load wishlist"
+      {entries.length > 0 ? (
+        <FlatList
+          contentContainerStyle={styles.listContent}
+          data={entries}
+          keyExtractor={(entry) =>
+            String(
+              entry.wishlist_item_id ??
+                `${entry.product_id}:${entry.variant_id}`,
+            )
+          }
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={styles.productSeparator} />}
+          renderItem={({ item }) => (
+            <WishlistItemCard
+              entry={item}
+              onOpenProduct={onOpenProduct}
+              onRemoveProduct={() => onRemoveProduct(item)}
             />
-          ) : (
-            <EmptyState
-              fillAvailableSpace
-              icon="heart-outline"
-              message="Save products you love and they will appear here."
-              title="Your wishlist is empty"
-            />
-          )
-        }
-        renderItem={({ item }) => (
-          <WishlistItemCard
-            entry={item}
-            product={productsById[item.product_id]}
-            isLoadingDetails={loadingProductIds.includes(item.product_id)}
-            detailsError={productErrors[item.product_id] ?? null}
-            isAddingToCart={addingProductId === item.product_id}
-            onOpenProduct={onOpenProduct}
-            onRemoveProduct={onRemoveProduct}
-            onAddToCart={onAddToCart}
-          />
-        )}
-      />
+          )}
+        />
+      ) : (
+        <EmptyState
+          fillAvailableSpace
+          loading={isLoading}
+          icon={error ? "alert-circle-outline" : "heart-outline"}
+          message={
+            error
+              ? error
+              : isLoading
+                ? undefined
+                : "Save products you love and they will appear here."
+          }
+          onRetry={error ? onRetry : undefined}
+          title={
+            isLoading
+              ? "Loading wishlist"
+              : error
+                ? "Unable to load wishlist"
+                : "Your wishlist is empty"
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

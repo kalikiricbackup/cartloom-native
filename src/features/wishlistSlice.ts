@@ -41,19 +41,19 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 export const fetchWishlist = createAsyncThunk<
   WishlistEntry[],
-  void,
+  { force?: boolean } | void,
   { state: WishlistThunkState; rejectValue: string }
 >(
   "wishlist/fetch",
   async (_, { getState, rejectWithValue }) => {
-    const { isAuthenticated, accessToken } = getState().user;
-    if (!isAuthenticated || !accessToken) {
+    const { accessToken } = getState().user;
+    if (!accessToken) {
       return rejectWithValue("Sign in to view your wishlist.");
     }
 
     try {
       const entries = await getWishlist(accessToken);
-      if (!getState().user.isAuthenticated) {
+      if (getState().user.accessToken !== accessToken) {
         return rejectWithValue("Your session ended before the wishlist loaded.");
       }
       return entries;
@@ -64,7 +64,8 @@ export const fetchWishlist = createAsyncThunk<
     }
   },
   {
-    condition: (_, { getState }) =>
+    condition: (request, { getState }) =>
+      Boolean(request && request.force) ||
       getState().wishlist.status !== "loading",
   },
 );

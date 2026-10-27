@@ -27,5 +27,5 @@ export interface ProductDetails {
   reviews: number;
   offers: string[];
   variants: ProductDetailsVariant[];
-  badge?: string;
+  badge?: string | null;
 }

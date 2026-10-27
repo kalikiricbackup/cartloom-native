@@ -3,7 +3,9 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { getHomeData } from "@/services/api";
 import type { HomeApiResponse } from "@/types/api/home";
 
-interface HomeDataState extends HomeApiResponse {
+interface HomeDataState {
+  topCategories: HomeApiResponse["topCategories"];
+  bestDeals: HomeApiResponse["bestDeals"];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }

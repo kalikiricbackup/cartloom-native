@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { AppRoutes } from "@/constants/AppConstants";
+import { useToast } from "@/contexts/ToastContext";
 import { fetchProductCatalog } from "@/features/productCatalogSlice";
 import {
   addWishlistProduct,
@@ -10,11 +11,11 @@ import {
   removeWishlistProduct,
 } from "@/features/wishlistSlice";
 import type { AppDispatch, RootState } from "@/store/store";
+import { addCartItem } from "@/services/api";
 import type {
   Product,
   ProductListSort,
 } from "@/types/api/productList";
-import { showAppAlert } from "@/utils/showAppAlert";
 import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
 import ProductListPresenter, {
   type ProductFilters,
@@ -57,7 +58,9 @@ const toApiSort = (sort: ProductSort): ProductListSort => {
 
 const ProductListContainer = () => {
   const router = useRouter();
+  const { showToast } = useToast();
   const dispatch = useDispatch<AppDispatch>();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const wishlistEntries = useSelector(
     (state: RootState) => state.wishlist.entries,
   );
@@ -68,8 +71,8 @@ const ProductListContainer = () => {
   const wishlistStatus = useSelector(
     (state: RootState) => state.wishlist.status,
   );
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.user.isAuthenticated,
+  const accessToken = useSelector(
+    (state: RootState) => state.user.accessToken,
   );
   const {
     products,
@@ -95,10 +98,23 @@ const ProductListContainer = () => {
   const initialSearch = Array.isArray(routeSearch)
     ? routeSearch[0] ?? ""
     : routeSearch ?? "";
+  const routeCategoryValue = routeCategory || "All";
   const [selectedCategory, setSelectedCategory] = useState(
-    routeCategory || "All",
+    routeCategoryValue,
   );
   const [searchText, setSearchText] = useState(initialSearch);
+  const [syncedRouteCategory, setSyncedRouteCategory] =
+    useState(routeCategoryValue);
+  const [syncedInitialSearch, setSyncedInitialSearch] =
+    useState(initialSearch);
+  if (syncedRouteCategory !== routeCategoryValue) {
+    setSyncedRouteCategory(routeCategoryValue);
+    setSelectedCategory(routeCategoryValue);
+  }
+  if (syncedInitialSearch !== initialSearch) {
+    setSyncedInitialSearch(initialSearch);
+    setSearchText(initialSearch);
+  }
   const [filters, setFilters] = useState<ProductFilters>(createEmptyFilters);
   const [draftFilters, setDraftFilters] =
     useState<ProductFilters>(createEmptyFilters);
@@ -109,14 +125,14 @@ const ProductListContainer = () => {
   const previousCategoryRef = useRef(selectedCategory);
 
   useEffect(() => {
-    if (isAuthenticated && wishlistStatus === "idle") {
+    if (accessToken && wishlistStatus === "idle") {
       void dispatch(fetchWishlist());
     }
-  }, [dispatch, isAuthenticated, wishlistStatus]);
+  }, [accessToken, dispatch, wishlistStatus]);
 
   const createQuery = useCallback(
     (page: number, force = false) => ({
-      NameDescriptionsearch: searchText.trim() || undefined,
+      search: searchText.trim() || undefined,
       category:
         selectedCategory === "All"
           ? undefined
@@ -156,15 +172,7 @@ const ProductListContainer = () => {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [createQuery, dispatch]);
-
-  useEffect(() => {
-    setSelectedCategory(routeCategory || "All");
-  }, [routeCategory]);
-
-  useEffect(() => {
-    setSearchText(initialSearch);
-  }, [initialSearch]);
+  }, [createQuery, dispatch, selectedCategory]);
 
   const brands = useMemo(
     () => [...new Set(products.map((product) => product.brand))],
@@ -233,6 +241,13 @@ const ProductListContainer = () => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    requestedPageRef.current = null;
+    void dispatch(
+      fetchProductCatalog({
+        ...createQuery(1),
+        category: category === "All" ? undefined : toCategorySlug(category),
+      }),
+    );
   };
 
   const loadMoreProducts = useCallback(() => {
@@ -251,10 +266,40 @@ const ProductListContainer = () => {
   }, [createQuery, dispatch, page, status, totalPages]);
 
   const handleAddToCart = (product: Product) => {
-    showAppAlert(
-      "Cart coming soon",
-      `${product.name} is ready to add once cart is available.`,
-    );
+    if (!accessToken) {
+      showToast({ message: "Sign in to add items to your cart.", type: "error" });
+      return;
+    }
+
+    const variant =
+      product.variants.find((candidate) => candidate.stock > 0) ??
+      product.variants[0];
+    if (!variant) {
+      showToast({
+        message: "This product has no available variants.",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsAddingToCart(true);
+    void addCartItem(
+      { parentId: variant.parentId, variant_id: variant.variantid },
+      accessToken,
+    )
+      .then(() => {
+        showToast({ message: `${product.name} added to cart.`, type: "success" });
+      })
+      .catch((error: unknown) => {
+        showToast({
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to add this product to your cart.",
+          type: "error",
+        });
+      })
+      .finally(() => setIsAddingToCart(false));
   };
 
   return (
@@ -276,6 +321,7 @@ const ProductListContainer = () => {
       canLoadMore={status === "succeeded" && page < totalPages}
       error={error}
       favoriteIds={favoriteIds}
+      isAddingToCart={isAddingToCart}
       onBack={() => router.navigate(AppRoutes.home)}
       onSearchChange={setSearchText}
       onSearchClear={() => setSearchText("")}

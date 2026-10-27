@@ -1,5 +1,5 @@
 import { useAppTheme } from "@/utils/useTheme";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 /**
@@ -18,13 +18,13 @@ export const useLoaderHook = (): [
   const [loading, setLoading] = useState(false);
   const { colors } = useAppTheme();
 
-  const showLoading = () => {
+  const showLoading = useCallback(() => {
     setLoading(true);
-  };
+  }, []);
 
-  const hideLoading = () => {
+  const hideLoading = useCallback(() => {
     setLoading(false);
-  };
+  }, []);
 
   /**
    * Returns the LoaderComponent, which displays an ActivityIndicator when loading is true.

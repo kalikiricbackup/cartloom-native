@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppHeader from "@/components/common/AppHeader";
 import CustomButton from "@/components/common/CustomButton";
 import EmptyState from "@/components/common/EmptyState";
+import PageLoadingOverlay from "@/components/common/PageLoadingOverlay";
 import ProductDetailsCard from "@/components/product/ProductDetailsCard";
 import type {
   ProductDetails,
@@ -28,6 +29,7 @@ interface ProductDetailsPresenterProps {
   product: ProductDetails | undefined;
   selectedVariant: ProductDetailsVariant | undefined;
   isLoading: boolean;
+  isAddingToCart: boolean;
   error: string | null;
   onRetry: () => void;
   onBack: () => void;
@@ -44,6 +46,7 @@ const ProductDetailsPresenter = ({
   product,
   selectedVariant,
   isLoading,
+  isAddingToCart,
   error,
   onRetry,
   onBack,
@@ -60,11 +63,15 @@ const ProductDetailsPresenter = ({
       ? window.innerWidth
       : windowWidth;
   const imageListRef = useRef<ScrollView>(null);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imagePage, setImagePage] = useState<{
+    variantId: string | undefined;
+    index: number;
+  }>({ variantId: selectedVariant?.variantid, index: 0 });
+  const activeImageIndex =
+    imagePage.variantId === selectedVariant?.variantid ? imagePage.index : 0;
   const images = selectedVariant?.images ?? [];
 
   useEffect(() => {
-    setActiveImageIndex(0);
     imageListRef.current?.scrollTo({ x: 0, animated: false });
   }, [selectedVariant?.variantid]);
 
@@ -164,16 +171,22 @@ const ProductDetailsPresenter = ({
               nestedScrollEnabled
               onMomentumScrollEnd={(event) => {
                 if (imageWidth > 0) {
-                  setActiveImageIndex(
-                    Math.round(event.nativeEvent.contentOffset.x / imageWidth),
-                  );
+                  setImagePage({
+                    variantId: selectedVariant.variantid,
+                    index: Math.round(
+                      event.nativeEvent.contentOffset.x / imageWidth,
+                    ),
+                  });
                 }
               }}
               onScroll={(event) => {
                 if (imageWidth > 0) {
-                  setActiveImageIndex(
-                    Math.round(event.nativeEvent.contentOffset.x / imageWidth),
-                  );
+                  setImagePage({
+                    variantId: selectedVariant.variantid,
+                    index: Math.round(
+                      event.nativeEvent.contentOffset.x / imageWidth,
+                    ),
+                  });
                 }
               }}
               pagingEnabled
@@ -223,7 +236,10 @@ const ProductDetailsPresenter = ({
                       x: imageWidth * index,
                       animated: true,
                     });
-                    setActiveImageIndex(index);
+                    setImagePage({
+                      variantId: selectedVariant.variantid,
+                      index,
+                    });
                   }}
                   style={[
                     styles.dot,
@@ -255,12 +271,13 @@ const ProductDetailsPresenter = ({
           <Text style={styles.buyNowText}>Buy Now</Text>
         </Pressable>
         <CustomButton
-          disabled={selectedVariant.stock <= 0}
+          disabled={selectedVariant.stock <= 0 || isAddingToCart}
           onPress={() => onAddToCart(selectedVariant)}
           style={styles.addToCartButton}
           title="Add to Cart"
         />
       </View>
+      <PageLoadingOverlay visible={isAddingToCart} />
     </SafeAreaView>
   );
 };

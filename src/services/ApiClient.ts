@@ -1,54 +1,55 @@
-﻿import axios, {
+import { AxiosHeaders, create } from "axios";
+import type {
   AxiosError,
-  AxiosHeaders,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
 import { BaseUrl } from "./Config";
 import { ErrorHandler } from "./ErrorHandler";
 
-// ---------------------------
-// Interfaces
-// ---------------------------
-export interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
-  authType?: "basic" | "bearer";
-}
 interface ErrorResponse {
-  message?: string;
-  errorCode?: string;
+  message?: unknown;
+  detail?: unknown;
 }
 
-// ---------------------------
-// Axios instance
-// ---------------------------
-const apiClient = axios.create({
+const apiClient = create({
   baseURL: BaseUrl,
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
 
 let authToken: string | null = null;
+let unauthorizedHandler: ((failedToken: string) => void | Promise<void>) | null =
+  null;
+let unauthorizedHandled = false;
 
 export const setAuthToken = (token: string | null) => {
+  if (authToken !== token) unauthorizedHandled = false;
   authToken = token;
+};
+
+export const setUnauthorizedHandler = (
+  handler: ((failedToken: string) => void | Promise<void>) | null,
+) => {
+  unauthorizedHandler = handler;
 };
 
 // ---------------------------
 // Helpers
 // ---------------------------
-const logApiRequest = (method: string, url: string, data?: any) => {
-  console.log(`[API REQUEST] ${method.toUpperCase()} ${url}`, data || "");
+const getSafeEndpoint = (url: string) => url.split(/[?#]/, 1)[0];
+
+const logApiRequest = (method: string, url: string) => {
+  console.log(`[API REQUEST] ${method.toUpperCase()} ${getSafeEndpoint(url)}`);
 };
 
-const logApiResponse = (url: string, status: number, data?: any) => {
-  console.log(`[API RESPONSE] ${status} - ${url}`, data || "");
+const logApiResponse = (url: string, status: number) => {
+  console.log(`[API RESPONSE] ${status} - ${getSafeEndpoint(url)}`);
 };
 
-const logApiError = (url: string, error: any) => {
+const logApiError = (url: string, status?: number) => {
   console.error(
-    `[API ERROR] ${url}`,
-    error.response ? error.response.data : error.message,
+    `[API ERROR] ${getSafeEndpoint(url)}${status ? ` (${status})` : ""}`,
   );
 };
 
@@ -57,27 +58,11 @@ const logApiError = (url: string, error: any) => {
 // ---------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const requestConfig = config as CustomAxiosRequestConfig;
-
-    if (requestConfig.authType === "bearer" && authToken) {
-      const headers = config.headers as any;
-
-      if (headers && typeof headers.set === "function") {
-        if (!headers.has("Authorization")) {
-          headers.set("Authorization", "Bearer " + authToken);
-        }
-      } else {
-        const nextHeaders = AxiosHeaders.from(config.headers ?? {});
-        nextHeaders.set("Authorization", "Bearer " + authToken);
-        config.headers = nextHeaders;
-      }
-    }
-
-    logApiRequest(config.method || "GET", config.url || "", config.data);
+    logApiRequest(config.method || "GET", config.url || "");
     return config;
   },
   (error) => {
-    console.error("[REQUEST ERROR]", error);
+    console.error("[REQUEST ERROR] Unable to prepare API request.");
     return Promise.reject(error);
   },
 );
@@ -87,13 +72,37 @@ apiClient.interceptors.request.use(
 // ---------------------------
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    logApiResponse(response.config.url || "", response.status, response.data);
+    logApiResponse(response.config.url || "", response.status);
     return response;
   },
   async (error: AxiosError<ErrorResponse>) => {
-    const originalRequest = error.config as CustomAxiosRequestConfig;
+    const originalRequest = error.config;
 
-    logApiError(originalRequest?.url || "", error);
+    logApiError(originalRequest?.url || "", error.response?.status);
+    const authorization = AxiosHeaders.from(originalRequest?.headers).get(
+      "Authorization",
+    );
+    const failedToken =
+      typeof authorization === "string" &&
+      authorization.startsWith("Bearer ")
+        ? authorization.slice("Bearer ".length)
+        : null;
+
+    if (
+      error.response?.status === 401 &&
+      failedToken &&
+      failedToken === authToken &&
+      unauthorizedHandler &&
+      !unauthorizedHandled
+    ) {
+      unauthorizedHandled = true;
+      try {
+        await unauthorizedHandler?.(failedToken);
+      } catch (handlerError) {
+        console.error("Unable to handle an unauthorized session.", handlerError);
+      }
+    }
+
     return Promise.reject(ErrorHandler(error));
   },
 );

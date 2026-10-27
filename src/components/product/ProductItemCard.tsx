@@ -9,6 +9,7 @@ import { useAppTheme } from "@/utils/useTheme";
 interface ProductItemCardProps {
   product: Product;
   favorite: boolean;
+  isAddingToCart: boolean;
   onSelect: (product: Product) => void;
   onToggleFavorite: (product: Product) => void;
   onAddToCart: (product: Product) => void;
@@ -20,6 +21,7 @@ const currency = (amount: number) =>
 export default function ProductItemCard({
   product,
   favorite,
+  isAddingToCart,
   onSelect,
   onToggleFavorite,
   onAddToCart,
@@ -128,7 +130,17 @@ export default function ProductItemCard({
         </View>
       </Pressable>
       <Pressable
+        accessibilityLabel={
+          isAddingToCart
+            ? "Adding item to cart"
+            : `Add ${product.name} to cart`
+        }
         accessibilityRole="button"
+        accessibilityState={{
+          disabled: isAddingToCart,
+          busy: isAddingToCart,
+        }}
+        disabled={isAddingToCart}
         onPress={() => onAddToCart(product)}
         style={styles.addButton}
       >

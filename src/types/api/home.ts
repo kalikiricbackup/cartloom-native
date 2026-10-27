@@ -1,3 +1,5 @@
+import type { Product, ProductVariant } from "./productList";
+
 export interface HomeCategory {
   id: string;
   name: string;
@@ -7,29 +9,10 @@ export interface HomeCategory {
   productCount: number;
 }
 
-export interface HomeDealVariant {
-  id: string;
-  productId: number;
-  slug: string;
-  options: { type: string; label: string; value: string }[];
-  price: number;
-  originalPrice: number;
-  stock: number;
-  images: string[];
-}
+export type HomeDealVariant = ProductVariant;
 
-export interface HomeBestDeal {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  subCategory: string;
-  brand: string;
-  rating: number;
-  reviews: number;
-  offers: string[];
+export interface HomeBestDeal extends Product {
   variants: HomeDealVariant[];
-  badge: string;
   deal: {
     productId: number;
     label: string;
@@ -42,4 +25,11 @@ export interface HomeBestDeal {
 export interface HomeApiResponse {
   topCategories: HomeCategory[];
   bestDeals: HomeBestDeal[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalProducts: number;
+    totalPages: number;
+  };
+  products: Product[];
 }
