@@ -1,5 +1,11 @@
 import { useLoaderHook } from "@/hooks/useLoaderHook";
-import React, { createContext, useContext, type ReactNode } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 
 interface LoadingContextValue {
   loading: boolean;
@@ -11,17 +17,17 @@ export const LoadingContext = createContext<LoadingContextValue | null>(null);
 
 export const LoadingProvider = ({ children }: { children: ReactNode }) => {
   const [LoaderComponent, showLoading, hideLoading] = useLoaderHook();
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const startLoading = () => {
+  const startLoading = useCallback(() => {
     setLoading(true);
     showLoading();
-  };
+  }, [showLoading]);
 
-  const stopLoading = () => {
+  const stopLoading = useCallback(() => {
     setLoading(false);
     hideLoading();
-  };
+  }, [hideLoading]);
 
   return (
     <LoadingContext.Provider

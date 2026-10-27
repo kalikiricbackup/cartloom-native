@@ -1,11 +1,13 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 
 import { AppRoutes } from "@/constants/AppConstants";
 import { getProductList } from "@/services/api";
 import type { Product } from "@/types/api/productList";
 import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
 import SearchPresenter from "../presenter/SearchPresenter";
+
+const MIN_SEARCH_LENGTH = 4;
 
 const getErrorMessage = (error: unknown) => {
   if (
@@ -27,11 +29,23 @@ const SearchContainer = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        setQuery("");
+        setProducts([]);
+        setError(null);
+        setIsLoading(false);
+      },
+      [],
+    ),
+  );
+
   const handleQueryChange = (nextQuery: string) => {
     const searchTerm = nextQuery.trim();
     setQuery(nextQuery);
 
-    if (!searchTerm) {
+    if (searchTerm.length < MIN_SEARCH_LENGTH) {
       setProducts([]);
       setError(null);
       setIsLoading(false);
@@ -45,14 +59,14 @@ const SearchContainer = () => {
 
   useEffect(() => {
     const searchTerm = query.trim();
-    if (!searchTerm) return;
+    if (searchTerm.length < MIN_SEARCH_LENGTH) return;
 
     const controller = new AbortController();
 
     const timeout = setTimeout(() => {
       void getProductList(
         {
-          NameDescriptionsearch: searchTerm,
+          search: searchTerm,
           page: 1,
           pageSize: 20,
           sort: "popularity",
@@ -81,6 +95,7 @@ const SearchContainer = () => {
   return (
     <SearchPresenter
       query={query}
+      minSearchLength={MIN_SEARCH_LENGTH}
       products={products}
       isLoading={isLoading}
       error={error}

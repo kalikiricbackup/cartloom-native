@@ -7,6 +7,7 @@ import { Provider } from "react-redux";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import ReduxLoadingOverlay from "@/components/common/ReduxLoadingOverlay";
+import UnauthorizedSessionHandler from "@/components/common/UnauthorizedSessionHandler";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { userActions, type AuthSession } from "@/features/userSlice";
@@ -78,6 +79,7 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
             </Stack>
+            <UnauthorizedSessionHandler />
             <ReduxLoadingOverlay />
           </LoadingProvider>
         </ToastProvider>

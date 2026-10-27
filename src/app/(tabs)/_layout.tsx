@@ -50,23 +50,14 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="products"
+        name="cart"
         options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="product-details"
-        options={{
-          href: null,
-        }}
-      />
-
-      <Tabs.Screen
-        name="search"
-        options={{
-          href: null,
+          title: "Cart",
+          href: "/(tabs)/cart",
+          tabBarButtonTestID: "cart-tab",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cart-outline" color={color} size={size} />
+          ),
         }}
       />
 
@@ -81,16 +72,6 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="cart"
-        options={{
-          title: "Cart",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart-outline" color={color} size={size} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
         name="account"
         options={{
           title: "Account",
@@ -99,6 +80,9 @@ export default function TabsLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen name="(browse)" options={{ href: null }} />
+      <Tabs.Screen name="(account)" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -39,7 +39,7 @@ const initialState: ProductCatalogState = {
 };
 
 const getFilterKey = ({
-  NameDescriptionsearch,
+  search,
   category,
   brand,
   minPrice,
@@ -49,7 +49,7 @@ const getFilterKey = ({
   sort,
 }: ProductListQuery) =>
   JSON.stringify([
-    NameDescriptionsearch ?? null,
+    search ?? null,
     category ?? null,
     brand ?? null,
     minPrice ?? null,
@@ -60,7 +60,7 @@ const getFilterKey = ({
   ]);
 
 const getQueryKey = ({
-  NameDescriptionsearch,
+  search,
   category,
   brand,
   minPrice,
@@ -71,7 +71,7 @@ const getQueryKey = ({
   sort,
 }: ProductListQuery) =>
   JSON.stringify([
-    NameDescriptionsearch ?? null,
+    search ?? null,
     category ?? null,
     brand ?? null,
     minPrice ?? null,

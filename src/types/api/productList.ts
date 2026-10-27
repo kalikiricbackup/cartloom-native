@@ -45,7 +45,7 @@ export type ProductListSort =
   | "price_desc";
 
 export interface ProductListQuery {
-  NameDescriptionsearch?: string;
+  search?: string;
   category?: string;
   brand?: string;
   minPrice?: number;

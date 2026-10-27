@@ -1,3 +1,4 @@
+import AddressData from "@/components/common/AddressData";
 import CustomButton from "@/components/common/CustomButton";
 import ShopKartHeader from "@/components/common/ShopKartHeader";
 import { useAppTheme } from "@/utils/useTheme";
@@ -18,14 +19,18 @@ interface CreateProfilePresenterProps {
   password: string;
   confirmPassword: string;
   gender: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
   pin: string;
   onFullNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
   onGenderChange: (value: string) => void;
-  onAddressChange: (value: string) => void;
+  onStreetChange: (value: string) => void;
+  onCityChange: (value: string) => void;
+  onStateChange: (value: string) => void;
   onPinChange: (value: string) => void;
   onBack: () => void;
   onRegistration: () => void;
@@ -39,14 +44,18 @@ const CreateProfilePresenter = ({
   password,
   confirmPassword,
   gender,
-  address,
+  street,
+  city,
+  state,
   pin,
   onFullNameChange,
   onEmailChange,
   onPasswordChange,
   onConfirmPasswordChange,
   onGenderChange,
-  onAddressChange,
+  onStreetChange,
+  onCityChange,
+  onStateChange,
   onPinChange,
   onBack,
   onRegistration,
@@ -62,10 +71,7 @@ const CreateProfilePresenter = ({
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
       >
-        <ShopKartHeader
-          onBack={onBack}
-          style={styles.fullWidthHeader}
-        />
+        <ShopKartHeader onBack={onBack} style={styles.fullWidthHeader} />
         {/* Illustration */}
         <View
           style={[
@@ -81,7 +87,9 @@ const CreateProfilePresenter = ({
         </View>
         {/* Title */}
         <Text style={styles.title}>Welcome to ShopKart!</Text>
-        <Text style={styles.subtitle}>Let's personalise your experience</Text>
+        <Text style={styles.subtitle}>
+          Let&apos;s personalise your experience
+        </Text>
         {/* Full Name */}
         <Text style={styles.label}>Full Name *</Text>
         <TextInput
@@ -174,42 +182,15 @@ const CreateProfilePresenter = ({
           ))}
         </View>
 
-        {/* Address */}
-        <Text style={styles.label}>Address *</Text>
-        <TextInput
-          value={address}
-          onChangeText={onAddressChange}
-          placeholder="Address"
-          placeholderTextColor={colors.textSecondary}
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.inputBackground,
-              borderColor: colors.inputBorder,
-              color: colors.textPrimary,
-            },
-          ]}
-        />
-
-        {/* {Pin} */}
-        <Text style={styles.label}>Pin *</Text>
-        <TextInput
-          value={pin}
-          onChangeText={onPinChange}
-          placeholder="Pin"
-          inputMode="numeric"
-          maxLength={6}
-          keyboardType="numeric"
-          placeholderTextColor={colors.textSecondary}
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.inputBackground,
-              borderColor: colors.inputBorder,
-              color: colors.textPrimary,
-              marginBottom: theme.spacing.xxl,
-            },
-          ]}
+        <AddressData
+          street={street}
+          city={city}
+          state={state}
+          pin={pin}
+          onStreetChange={onStreetChange}
+          onCityChange={onCityChange}
+          onStateChange={onStateChange}
+          onPinChange={onPinChange}
         />
 
         <CustomButton

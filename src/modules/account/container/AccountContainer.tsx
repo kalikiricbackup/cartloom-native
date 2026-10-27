@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { AppRoutes } from "@/constants/AppConstants";
 import { productCatalogActions } from "@/features/productCatalogSlice";
-import { wishlistActions } from "@/features/wishlistSlice";
 import { userActions } from "@/features/userSlice";
+import { wishlistActions } from "@/features/wishlistSlice";
 import { logoutUser } from "@/services/api";
 import { setAuthToken } from "@/services/ApiClient";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -26,15 +26,32 @@ const AccountContainer = () => {
         blurFocusedWebElement();
         router.push(AppRoutes.wishlist);
         return;
+      case "profile":
+        blurFocusedWebElement();
+        router.push(AppRoutes.profile);
+        return;
       case "logout":
         blurFocusedWebElement();
         void (async () => {
+          let sessionExpired = false;
           try {
             if (account.accessToken) {
-              await logoutUser(account.accessToken);
+              if (account.refreshToken) {
+                await logoutUser(account.accessToken, account.refreshToken);
+              }
             }
           } catch (error) {
-            console.warn("Logout API failed; clearing local session anyway.", error);
+            sessionExpired =
+              typeof error === "object" &&
+              error !== null &&
+              "status" in error &&
+              error.status === 401;
+            if (!sessionExpired) {
+              console.warn(
+                "Logout API failed; clearing local session anyway.",
+                error,
+              );
+            }
           } finally {
             setAuthToken(null);
             dispatch(productCatalogActions.clearProductCatalog());
@@ -43,13 +60,15 @@ const AccountContainer = () => {
             void removeStorageItem(StorageKeys.authSession).catch((error) => {
               console.error("Unable to clear the saved session.", error);
             });
-            router.replace(AppRoutes.home);
+            if (!sessionExpired) router.replace(AppRoutes.home);
           }
         })();
         return;
-      case "profile":
       case "orders":
+        return;
       case "addresses":
+        router.push(AppRoutes.addresses);
+        return;
       case "payments":
       case "notifications":
         showAppAlert(

@@ -1,19 +1,14 @@
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/common/AppHeader";
 import EmptyState from "@/components/common/EmptyState";
 import LoadMoreFooter from "@/components/common/LoadMoreFooter";
 import MultiSectionFilterSheet from "@/components/common/MultiSectionFilterSheet";
+import PageLoadingOverlay from "@/components/common/PageLoadingOverlay";
 import SearchBar from "@/components/common/SearchBar";
 import SortOptionsModal from "@/components/common/SortOptionsModal";
 import ProductItemCard from "@/components/product/ProductItemCard";
@@ -28,11 +23,7 @@ export interface ProductFilters {
   rating: string;
 }
 
-export type ProductSort =
-  | "popularity"
-  | "price-low"
-  | "price-high"
-  | "rating";
+export type ProductSort = "popularity" | "price-low" | "price-high" | "rating";
 
 interface ProductListPresenterProps {
   categories: string[];
@@ -52,6 +43,7 @@ interface ProductListPresenterProps {
   canLoadMore: boolean;
   error: string | null;
   favoriteIds: number[];
+  isAddingToCart: boolean;
   onBack: () => void;
   onSearchChange: (value: string) => void;
   onSearchClear: () => void;
@@ -99,6 +91,7 @@ export default function ProductListPresenter({
   canLoadMore,
   error,
   favoriteIds,
+  isAddingToCart,
   onBack,
   onSearchChange,
   onSearchClear,
@@ -137,10 +130,7 @@ export default function ProductListPresenter({
     return () => cancelAnimationFrame(frame);
   }, [selectedCategory]);
 
-  const toggleFavorite = (
-    product: Product,
-    isFavorite: boolean,
-  ) => {
+  const toggleFavorite = (product: Product, isFavorite: boolean) => {
     void onToggleFavorite(product)
       .then(() => {
         showToast({
@@ -277,6 +267,7 @@ export default function ProductListPresenter({
         renderItem={({ item: product }) => (
           <ProductItemCard
             favorite={favoriteIds.includes(product.id)}
+            isAddingToCart={isAddingToCart}
             onAddToCart={onAddToCart}
             onSelect={onSelectProduct}
             onToggleFavorite={(selectedProduct) =>
@@ -288,7 +279,9 @@ export default function ProductListPresenter({
             product={product}
           />
         )}
-        ItemSeparatorComponent={() => <View style={styles.productRowSeparator} />        }
+        ItemSeparatorComponent={() => (
+          <View style={styles.productRowSeparator} />
+        )}
         ListEmptyComponent={
           isLoading ? (
             <EmptyState loading title="Loading products" />
@@ -349,6 +342,7 @@ export default function ProductListPresenter({
         onSelect={onSelectSort}
       />
 
+      <PageLoadingOverlay visible={isAddingToCart} />
     </SafeAreaView>
   );
 }

@@ -19,7 +19,9 @@ const CreateProfileContainer = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState("");
-  const [address, setAddress] = useState("");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [pin, setPin] = useState("");
 
   const handleFullNameChange = (value: string) => {
@@ -38,9 +40,9 @@ const CreateProfileContainer = () => {
     setGender(value);
   };
 
-  const handleAddressChange = (value: string) => {
-    setAddress(value);
-  };
+  const handleStreetChange = (value: string) => setStreet(value);
+  const handleCityChange = (value: string) => setCity(value);
+  const handleStateChange = (value: string) => setState(value);
   const handlePinChange = (value: string) => {
     setPin(value);
   };
@@ -57,7 +59,14 @@ const CreateProfileContainer = () => {
   const handleRegistration = async () => {
     if (isLoading) return;
 
-    if (!fullName.trim() || !email.trim() || !address.trim() || !pin.trim()) {
+    if (
+      !fullName.trim() ||
+      !email.trim() ||
+      !street.trim() ||
+      !city.trim() ||
+      !state.trim() ||
+      !pin.trim()
+    ) {
       showAppAlert(
         "Missing information",
         "Please complete all required fields.",
@@ -65,8 +74,8 @@ const CreateProfileContainer = () => {
       return;
     }
 
-    if (address.trim().length < 5) {
-      showAppAlert("Invalid address", "Address must be at least 5 characters.");
+    if (street.trim().length < 5) {
+      showAppAlert("Invalid address", "Street must be at least 5 characters.");
       return;
     }
 
@@ -94,7 +103,11 @@ const CreateProfileContainer = () => {
       email: email.trim(),
       password,
       gender: genderCode[gender as keyof typeof genderCode],
-      address: address.trim(),
+      address: {
+        street: street.trim(),
+        city: city.trim(),
+        state: state.trim(),
+      },
       pin: pin.trim(),
     };
     try {
@@ -128,14 +141,18 @@ const CreateProfileContainer = () => {
       password={password}
       confirmPassword={confirmPassword}
       gender={gender}
-      address={address}
+      street={street}
+      city={city}
+      state={state}
       pin={pin}
       onFullNameChange={handleFullNameChange}
       onEmailChange={handleEmailChange}
       onPasswordChange={handlePasswordChange}
       onConfirmPasswordChange={handleConfirmPasswordChange}
       onGenderChange={handleGenderChange}
-      onAddressChange={handleAddressChange}
+      onStreetChange={handleStreetChange}
+      onCityChange={handleCityChange}
+      onStateChange={handleStateChange}
       onPinChange={handlePinChange}
       onBack={handleBack}
       onRegistration={handleRegistration}

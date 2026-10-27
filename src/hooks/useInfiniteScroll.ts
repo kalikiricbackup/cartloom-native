@@ -21,9 +21,9 @@ export default function useInfiniteScroll({
 }: UseInfiniteScrollOptions) {
   const loadingRef = useRef(loading);
   const requestStartedRef = useRef(false);
-  loadingRef.current = loading;
 
   useEffect(() => {
+    loadingRef.current = loading;
     if (!loading) requestStartedRef.current = false;
   }, [loading]);
 

@@ -35,6 +35,11 @@ interface ActiveToast extends Required<ToastOptions> {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+let globalShowToast: ((options: ToastOptions) => void) | null = null;
+
+export function showGlobalToast(options: ToastOptions) {
+  globalShowToast?.(options);
+}
 
 const iconByType = {
   success: "checkmark-circle",
@@ -74,6 +79,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  useEffect(() => {
+    globalShowToast = showToast;
+    return () => {
+      if (globalShowToast === showToast) globalShowToast = null;
+    };
+  }, [showToast]);
 
   useEffect(
     () => () => {
