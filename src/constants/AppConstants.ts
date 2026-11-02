@@ -22,6 +22,7 @@ export const AppRoutes = {
   wishlist: "/(tabs)/wishList",
   cart: "/(tabs)/cart",
   profile: "/(tabs)/(account)/profile",
+  orders: "/(tabs)/(account)/orders",
   addresses: "/(tabs)/(account)/addresses",
   addAddress: "/(tabs)/(account)/addOrEditAddress",
   editAddress: "/(tabs)/(account)/addOrEditAddress",
