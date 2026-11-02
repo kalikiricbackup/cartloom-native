@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   FlatList,
@@ -75,17 +76,30 @@ export default function OrdersPresenter({
 
       <View style={styles.divider} />
 
-      {item.items.map((orderItem) => (
-        <View key={orderItem.id} style={styles.itemRow}>
-          <View style={styles.itemDescription}>
-            <Text style={styles.productName}>{orderItem.product_name}</Text>
-            <Text style={styles.itemMeta}>
-              Qty {orderItem.quantity} · {orderItem.variant_id}
+      {item.items.map((orderItem) => {
+        const imageUrl = getOrderItemImage(orderItem.variant);
+        return (
+          <View key={orderItem.id} style={styles.itemRow}>
+            {imageUrl ? (
+              <Image
+                accessibilityLabel={`${orderItem.product_name} product image`}
+                contentFit="contain"
+                source={{ uri: imageUrl }}
+                style={styles.productImage}
+              />
+            ) : null}
+            <View style={styles.itemDescription}>
+              <Text style={styles.productName}>{orderItem.product_name}</Text>
+              <Text style={styles.itemMeta}>
+                Qty {orderItem.quantity} · {orderItem.variant_id}
+              </Text>
+            </View>
+            <Text style={styles.itemPrice}>
+              {formatCurrency(orderItem.line_total)}
             </Text>
           </View>
-          <Text style={styles.itemPrice}>{formatCurrency(orderItem.line_total)}</Text>
-        </View>
-      ))}
+        );
+      })}
 
       {item.shipping_address ? (
         <View style={styles.shippingBlock}>
@@ -165,6 +179,14 @@ export default function OrdersPresenter({
   );
 }
 
+const getOrderItemImage = (variant: Record<string, unknown>) => {
+  const images = variant.images;
+  const imageUrl = Array.isArray(images) ? images[0] : undefined;
+  return typeof imageUrl === "string" && imageUrl.trim().length > 0
+    ? imageUrl
+    : null;
+};
+
 const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
   StyleSheet.create({
     safeArea: {
@@ -229,6 +251,12 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
       flexDirection: "row",
       gap: theme.spacing.sm,
       justifyContent: "space-between",
+    },
+    productImage: {
+      backgroundColor: theme.colors.background,
+      borderRadius: theme.radius.sm,
+      height: 56,
+      width: 56,
     },
     itemDescription: {
       flex: 1,
