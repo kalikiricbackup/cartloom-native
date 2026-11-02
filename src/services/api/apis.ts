@@ -69,6 +69,41 @@ export interface CreateOrderRequest {
   address_id: number;
 }
 
+export interface OrderHistoryItem {
+  id: number;
+  status: string;
+  total_amount: string;
+  shipping_address_id: number | null;
+  shipping_address: string | null;
+  shipping_pin: string | null;
+  created_at: string;
+  items: {
+    id: number;
+    product_id: number | null;
+    product_name: string;
+    variant_id: string;
+    variant: Record<string, unknown>;
+    unit_price: string;
+    quantity: number;
+    line_total: string;
+  }[];
+}
+
+export interface OrderHistoryResponse {
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  orders: OrderHistoryItem[];
+}
+
+export interface OrderHistoryQuery {
+  page?: number;
+  pageSize?: number;
+  duration?: number;
+  year?: number;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -541,6 +576,17 @@ export const createOrder = async (
   await postApi<unknown, CreateOrderRequest>(ApiUrls.orders, data, {
     headers: { Authorization: "Bearer " + accessToken },
   });
+};
+
+export const getOrderHistory = async (
+  accessToken: string,
+  query: OrderHistoryQuery = {},
+): Promise<OrderHistoryResponse> => {
+  const response = await getApi<OrderHistoryResponse>(ApiUrls.orders, {
+    headers: { Authorization: "Bearer " + accessToken },
+    params: query,
+  });
+  return response.data;
 };
 
 export const createAddress = async (

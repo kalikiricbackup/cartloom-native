@@ -65,6 +65,7 @@ const AccountContainer = () => {
         })();
         return;
       case "orders":
+        router.push(AppRoutes.orders);
         return;
       case "addresses":
         router.push(AppRoutes.addresses);
