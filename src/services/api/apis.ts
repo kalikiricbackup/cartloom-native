@@ -65,6 +65,10 @@ export interface AddressSaveRequest {
   pin: string;
 }
 
+export interface CreateOrderRequest {
+  address_id: number;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -528,6 +532,15 @@ export const getAddresses = async (
     headers: { Authorization: "Bearer " + accessToken },
   });
   return response.data;
+};
+
+export const createOrder = async (
+  data: CreateOrderRequest,
+  accessToken: string,
+): Promise<void> => {
+  await postApi<unknown, CreateOrderRequest>(ApiUrls.orders, data, {
+    headers: { Authorization: "Bearer " + accessToken },
+  });
 };
 
 export const createAddress = async (

@@ -16,6 +16,7 @@ export const ApiUrls = {
   cartItems: `${apiBaseUrl}/cart/items`,
   cartItem: (itemId: number) => `${apiBaseUrl}/cart/items/${itemId}`,
   addresses: `${apiBaseUrl}/addresses`,
+  orders: `${apiBaseUrl}/orders`,
   address: (addressId: string | number) =>
     `${apiBaseUrl}/addresses/${addressId}`,
 } as const;
