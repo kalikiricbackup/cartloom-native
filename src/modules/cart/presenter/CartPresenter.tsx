@@ -170,7 +170,7 @@ export default function CartPresenter({
                 disabled={isPricingIncomplete}
                 onPress={onCheckout}
                 style={styles.checkoutButton}
-                title="Place Order"
+                title="Proceed to Checkout"
               />
             </View>
           ) : null
