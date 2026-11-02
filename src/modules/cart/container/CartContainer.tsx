@@ -7,7 +7,13 @@ import { useToast } from "@/contexts/ToastContext";
 import { cartActions, fetchCart } from "@/features/cartSlice";
 import { addWishlistProduct } from "@/features/wishlistSlice";
 import { MAX_CART_QUANTITY, type CartItem } from "@/services/api";
-import { deleteCartItem, updateCartItemQuantity } from "@/services/api";
+import {
+  createOrder,
+  deleteCartItem,
+  getAddresses,
+  updateCartItemQuantity,
+} from "@/services/api";
+import type { Address } from "@/types/api/address";
 import type { AppDispatch, RootState } from "@/store/store";
 import CartPresenter from "../presenter/CartPresenter";
 
@@ -39,6 +45,10 @@ export default function CartContainer() {
   } = useSelector((state: RootState) => state.cart);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
   const [isCartActionLoading, setIsCartActionLoading] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isAddressPickerVisible, setIsAddressPickerVisible] = useState(false);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -143,6 +153,43 @@ export default function CartContainer() {
     }
   };
 
+  const openAddressPicker = async () => {
+    if (!accessToken || visibleItems.length === 0 || isPlacingOrder) return;
+    setIsAddressPickerVisible(true);
+    setIsLoadingAddresses(true);
+    try {
+      setAddresses(await getAddresses(accessToken));
+    } catch (error) {
+      setIsAddressPickerVisible(false);
+      showToast({
+        message: getErrorMessage(error, "Unable to load your saved addresses."),
+        type: "error",
+      });
+    } finally {
+      setIsLoadingAddresses(false);
+    }
+  };
+
+  const placeOrder = async (address: Address) => {
+    if (!accessToken || isPlacingOrder) return;
+    setIsPlacingOrder(true);
+    setIsCartActionLoading(true);
+    try {
+      await createOrder({ address_id: address.id }, accessToken);
+      setIsAddressPickerVisible(false);
+      showToast({ message: "Your order has been placed.", type: "success" });
+      await dispatch(fetchCart({ accessToken, force: true }));
+    } catch (error) {
+      showToast({
+        message: getErrorMessage(error, "Unable to place your order."),
+        type: "error",
+      });
+    } finally {
+      setIsCartActionLoading(false);
+      setIsPlacingOrder(false);
+    }
+  };
+
   return (
     <CartPresenter
       items={visibleItems}
@@ -156,9 +203,17 @@ export default function CartContainer() {
       onQuantityChange={(item, quantity) => void changeQuantity(item, quantity)}
       onRemove={(item) => void removeItem(item)}
       onMoveToWishlist={(item) => void moveToWishlist(item)}
-      onCheckout={() =>
-        showToast({ message: "Checkout will be available soon.", type: "info" })
-      }
+      onCheckout={() => void openAddressPicker()}
+      addresses={addresses}
+      isAddressPickerVisible={isAddressPickerVisible}
+      isLoadingAddresses={isLoadingAddresses}
+      isPlacingOrder={isPlacingOrder}
+      onSelectAddress={(address) => void placeOrder(address)}
+      onCloseAddressPicker={() => setIsAddressPickerVisible(false)}
+      onAddAddress={() => {
+        setIsAddressPickerVisible(false);
+        router.push(AppRoutes.addAddress);
+      }}
     />
   );
 }
