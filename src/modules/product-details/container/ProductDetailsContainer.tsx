@@ -4,14 +4,19 @@ import { useSelector } from "react-redux";
 
 import { AppRoutes } from "@/constants/AppConstants";
 import { useToast } from "@/contexts/ToastContext";
-import { addCartItem, getProductDetails } from "@/services/api";
+import {
+  addCartItem,
+  createBuyNowOrder,
+  getAddresses,
+  getProductDetails,
+} from "@/services/api";
+import type { Address } from "@/types/api/address";
 import type { RootState } from "@/store/store";
 import type {
   ProductDetails,
   ProductDetailsVariant,
 } from "@/types/api/productDetails";
 import { blurFocusedWebElement } from "@/utils/blurFocusedWebElement";
-import { showAppAlert } from "@/utils/showAppAlert";
 import ProductDetailsPresenter from "../presenter/ProductDetailsPresenter";
 
 const getStartingVariant = (product: ProductDetails) => {
@@ -59,6 +64,10 @@ const ProductDetailsContainer = () => {
   } | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [isAddressPickerVisible, setIsAddressPickerVisible] = useState(false);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedVariantSelection, setSelectedVariantSelection] = useState<{
     productId: number;
     variantId: string;
@@ -181,8 +190,62 @@ const ProductDetailsContainer = () => {
     setRetryCount((count) => count + 1);
   }, []);
 
-  const handleBuyNow = () => {
-    showAppAlert("Checkout coming soon", "Checkout will be available soon.");
+  const handleBuyNow = async () => {
+    if (!product || !selectedVariant || isBuyingNow) return;
+    if (!accessToken) {
+      showToast({ message: "Sign in to place an order.", type: "error" });
+      return;
+    }
+
+    setIsAddressPickerVisible(true);
+    setIsLoadingAddresses(true);
+    try {
+      setAddresses(await getAddresses(accessToken));
+    } catch (addressError) {
+      setIsAddressPickerVisible(false);
+      showToast({
+        message:
+          addressError instanceof Error
+            ? addressError.message
+            : "Unable to load your saved addresses.",
+        type: "error",
+      });
+    } finally {
+      setIsLoadingAddresses(false);
+    }
+  };
+
+  const handleSelectAddress = async (address: Address) => {
+    if (!product || !selectedVariant || !accessToken || isBuyingNow) return;
+    setIsBuyingNow(true);
+    try {
+      await createBuyNowOrder(
+        {
+          address_id: address.id,
+          items: [
+            {
+              parent_id: selectedVariant.parentId,
+              variant_id: selectedVariant.variantid,
+              quantity: 1,
+            },
+          ],
+        },
+        accessToken,
+      );
+      setIsAddressPickerVisible(false);
+      showToast({ message: "Your order has been placed.", type: "success" });
+      router.push(AppRoutes.orders);
+    } catch (orderError) {
+      showToast({
+        message:
+          orderError instanceof Error
+            ? orderError.message
+            : "Unable to place your order.",
+        type: "error",
+      });
+    } finally {
+      setIsBuyingNow(false);
+    }
   };
 
   return (
@@ -197,6 +260,16 @@ const ProductDetailsContainer = () => {
       onAddToCart={handleAddToCart}
       isAddingToCart={isAddingToCart}
       onBuyNow={handleBuyNow}
+      isBuyingNow={isBuyingNow}
+      addresses={addresses}
+      isAddressPickerVisible={isAddressPickerVisible}
+      isLoadingAddresses={isLoadingAddresses}
+      onSelectAddress={handleSelectAddress}
+      onCloseAddressPicker={() => setIsAddressPickerVisible(false)}
+      onAddAddress={() => {
+        setIsAddressPickerVisible(false);
+        router.push(AppRoutes.addAddress);
+      }}
       onGoHome={() => {
         blurFocusedWebElement();
         router.replace(AppRoutes.home);

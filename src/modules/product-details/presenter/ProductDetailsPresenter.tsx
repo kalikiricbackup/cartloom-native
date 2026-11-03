@@ -4,6 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
   Platform,
+  FlatList,
+  Modal,
   Pressable,
   Share,
   ScrollView,
@@ -23,6 +25,7 @@ import type {
   ProductDetails,
   ProductDetailsVariant,
 } from "@/types/api/productDetails";
+import type { Address } from "@/types/api/address";
 import { useAppTheme } from "@/utils/useTheme";
 
 interface ProductDetailsPresenterProps {
@@ -36,6 +39,13 @@ interface ProductDetailsPresenterProps {
   onOptionSelect: (type: string, value: string) => void;
   onAddToCart: (variant: ProductDetailsVariant) => void;
   onBuyNow: () => void;
+  isBuyingNow: boolean;
+  addresses: Address[];
+  isAddressPickerVisible: boolean;
+  isLoadingAddresses: boolean;
+  onSelectAddress: (address: Address) => void;
+  onCloseAddressPicker: () => void;
+  onAddAddress: () => void;
   onGoHome: () => void;
 }
 
@@ -53,6 +63,13 @@ const ProductDetailsPresenter = ({
   onOptionSelect,
   onAddToCart,
   onBuyNow,
+  isBuyingNow,
+  addresses,
+  isAddressPickerVisible,
+  isLoadingAddresses,
+  onSelectAddress,
+  onCloseAddressPicker,
+  onAddAddress,
   onGoHome,
 }: ProductDetailsPresenterProps) => {
   const theme = useAppTheme();
@@ -260,15 +277,16 @@ const ProductDetailsPresenter = ({
 
       <View style={styles.actionBar}>
         <Pressable
+          accessibilityState={{ disabled: selectedVariant.stock <= 0 || isBuyingNow, busy: isBuyingNow }}
           accessibilityRole="button"
-          disabled={selectedVariant.stock <= 0}
+          disabled={selectedVariant.stock <= 0 || isBuyingNow}
           onPress={onBuyNow}
           style={[
             styles.buyNowButton,
             selectedVariant.stock <= 0 && styles.disabledButton,
           ]}
         >
-          <Text style={styles.buyNowText}>Buy Now</Text>
+          <Text style={styles.buyNowText}>{isBuyingNow ? "Placing order…" : "Buy Now"}</Text>
         </Pressable>
         <CustomButton
           disabled={selectedVariant.stock <= 0 || isAddingToCart}
@@ -277,6 +295,49 @@ const ProductDetailsPresenter = ({
           title="Add to Cart"
         />
       </View>
+      <Modal
+        animationType="slide"
+        onRequestClose={onCloseAddressPicker}
+        transparent
+        visible={isAddressPickerVisible}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.addressSheet}>
+            <Text style={styles.addressTitle}>Choose a delivery address</Text>
+            {isLoadingAddresses ? (
+              <Text style={styles.addressHint}>Loading your addresses…</Text>
+            ) : addresses.length === 0 ? (
+              <Text style={styles.addressHint}>Add an address to place your order.</Text>
+            ) : (
+              <FlatList
+                data={addresses}
+                keyExtractor={(address) => String(address.id)}
+                ItemSeparatorComponent={() => <View style={styles.addressSeparator} />}
+                renderItem={({ item }) => {
+                  const lines = Array.from(new Set([item.address, item.street, item.city, item.state].filter(Boolean))).join(", ");
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={isBuyingNow}
+                      onPress={() => onSelectAddress(item)}
+                      style={styles.selectableAddress}
+                    >
+                      <Text style={styles.addressLabel}>{item.label || "Address"}</Text>
+                      <Text style={styles.addressHint}>{[lines, item.pin].filter(Boolean).join(" • ")}</Text>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+            {!isLoadingAddresses && addresses.length === 0 ? (
+              <CustomButton onPress={onAddAddress} title="Add Address" />
+            ) : null}
+            <Pressable accessibilityRole="button" onPress={onCloseAddressPicker} style={styles.cancelButton}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <PageLoadingOverlay visible={isAddingToCart} />
     </SafeAreaView>
   );
@@ -399,6 +460,49 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
     },
     disabledButton: {
       opacity: 0.5,
+    },
+    modalBackdrop: {
+      backgroundColor: "rgba(0, 0, 0, 0.45)",
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    addressSheet: {
+      backgroundColor: theme.colors.card,
+      borderTopLeftRadius: theme.radius.lg,
+      borderTopRightRadius: theme.radius.lg,
+      gap: theme.spacing.md,
+      maxHeight: "75%",
+      padding: theme.spacing.lg,
+    },
+    addressTitle: {
+      color: theme.colors.textPrimary,
+      fontSize: theme.typography.title,
+      fontWeight: theme.typography.weight.semiBold,
+    },
+    addressHint: {
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.body,
+    },
+    addressLabel: {
+      color: theme.colors.textPrimary,
+      fontSize: theme.typography.bodyLarge,
+      fontWeight: theme.typography.weight.semiBold,
+    },
+    selectableAddress: {
+      gap: theme.spacing.xs,
+      paddingVertical: theme.spacing.md,
+    },
+    addressSeparator: {
+      backgroundColor: theme.colors.border,
+      height: StyleSheet.hairlineWidth,
+    },
+    cancelButton: {
+      alignItems: "center",
+      paddingVertical: theme.spacing.md,
+    },
+    cancelText: {
+      color: theme.colors.textSecondary,
+      fontSize: theme.typography.body,
     },
   });
 

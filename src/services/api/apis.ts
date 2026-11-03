@@ -69,6 +69,15 @@ export interface CreateOrderRequest {
   address_id: number;
 }
 
+export interface BuyNowOrderRequest {
+  address_id: number;
+  items: {
+    parent_id: number;
+    variant_id: string;
+    quantity: number;
+  }[];
+}
+
 export interface OrderHistoryItem {
   id: number;
   status: string;
@@ -574,6 +583,15 @@ export const createOrder = async (
   accessToken: string,
 ): Promise<void> => {
   await postApi<unknown, CreateOrderRequest>(ApiUrls.orders, data, {
+    headers: { Authorization: "Bearer " + accessToken },
+  });
+};
+
+export const createBuyNowOrder = async (
+  data: BuyNowOrderRequest,
+  accessToken: string,
+): Promise<void> => {
+  await postApi<unknown, BuyNowOrderRequest>(ApiUrls.buyNow, data, {
     headers: { Authorization: "Bearer " + accessToken },
   });
 };
