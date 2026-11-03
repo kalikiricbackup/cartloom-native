@@ -4,8 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
   Platform,
-  FlatList,
-  Modal,
   Pressable,
   Share,
   ScrollView,
@@ -17,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AppHeader from "@/components/common/AppHeader";
+import AddressPickerModal from "@/components/common/AddressPickerModal";
 import CustomButton from "@/components/common/CustomButton";
 import EmptyState from "@/components/common/EmptyState";
 import PageLoadingOverlay from "@/components/common/PageLoadingOverlay";
@@ -295,49 +294,15 @@ const ProductDetailsPresenter = ({
           title="Add to Cart"
         />
       </View>
-      <Modal
-        animationType="slide"
-        onRequestClose={onCloseAddressPicker}
-        transparent
+      <AddressPickerModal
+        addresses={addresses}
+        isLoading={isLoadingAddresses}
+        isSubmitting={isBuyingNow}
+        onAddAddress={onAddAddress}
+        onClose={onCloseAddressPicker}
+        onSelectAddress={onSelectAddress}
         visible={isAddressPickerVisible}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.addressSheet}>
-            <Text style={styles.addressTitle}>Choose a delivery address</Text>
-            {isLoadingAddresses ? (
-              <Text style={styles.addressHint}>Loading your addresses…</Text>
-            ) : addresses.length === 0 ? (
-              <Text style={styles.addressHint}>Add an address to place your order.</Text>
-            ) : (
-              <FlatList
-                data={addresses}
-                keyExtractor={(address) => String(address.id)}
-                ItemSeparatorComponent={() => <View style={styles.addressSeparator} />}
-                renderItem={({ item }) => {
-                  const lines = Array.from(new Set([item.address, item.street, item.city, item.state].filter(Boolean))).join(", ");
-                  return (
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={isBuyingNow}
-                      onPress={() => onSelectAddress(item)}
-                      style={styles.selectableAddress}
-                    >
-                      <Text style={styles.addressLabel}>{item.label || "Address"}</Text>
-                      <Text style={styles.addressHint}>{[lines, item.pin].filter(Boolean).join(" • ")}</Text>
-                    </Pressable>
-                  );
-                }}
-              />
-            )}
-            {!isLoadingAddresses && addresses.length === 0 ? (
-              <CustomButton onPress={onAddAddress} title="Add Address" />
-            ) : null}
-            <Pressable accessibilityRole="button" onPress={onCloseAddressPicker} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      />
       <PageLoadingOverlay visible={isAddingToCart} />
     </SafeAreaView>
   );
@@ -460,49 +425,6 @@ const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
     },
     disabledButton: {
       opacity: 0.5,
-    },
-    modalBackdrop: {
-      backgroundColor: "rgba(0, 0, 0, 0.45)",
-      flex: 1,
-      justifyContent: "flex-end",
-    },
-    addressSheet: {
-      backgroundColor: theme.colors.card,
-      borderTopLeftRadius: theme.radius.lg,
-      borderTopRightRadius: theme.radius.lg,
-      gap: theme.spacing.md,
-      maxHeight: "75%",
-      padding: theme.spacing.lg,
-    },
-    addressTitle: {
-      color: theme.colors.textPrimary,
-      fontSize: theme.typography.title,
-      fontWeight: theme.typography.weight.semiBold,
-    },
-    addressHint: {
-      color: theme.colors.textSecondary,
-      fontSize: theme.typography.body,
-    },
-    addressLabel: {
-      color: theme.colors.textPrimary,
-      fontSize: theme.typography.bodyLarge,
-      fontWeight: theme.typography.weight.semiBold,
-    },
-    selectableAddress: {
-      gap: theme.spacing.xs,
-      paddingVertical: theme.spacing.md,
-    },
-    addressSeparator: {
-      backgroundColor: theme.colors.border,
-      height: StyleSheet.hairlineWidth,
-    },
-    cancelButton: {
-      alignItems: "center",
-      paddingVertical: theme.spacing.md,
-    },
-    cancelText: {
-      color: theme.colors.textSecondary,
-      fontSize: theme.typography.body,
     },
   });
 
